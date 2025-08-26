@@ -44,3 +44,7 @@ Thumbs.db
 # Data files (development only - contain sensitive data)
 /server/data/*.json
 /server/data/backups/
+
+# Planning documentation
+phase1_planning.md
+
