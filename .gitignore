@@ -41,5 +41,6 @@ testem.log
 .DS_Store
 Thumbs.db
 
-# Planning documentation
-phase1_planning.md
+# Data files (development only - contain sensitive data)
+/server/data/*.json
+/server/data/backups/
