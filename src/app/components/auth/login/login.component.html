@@ -1,0 +1,79 @@
+<div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-light">
+  <div class="row w-100">
+    <div class="col-md-6 col-lg-4 mx-auto">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white text-center">
+          <h3 class="mb-0">
+            <i class="bi bi-chat-dots me-2"></i>
+            Chat System Login
+          </h3>
+        </div>
+        <div class="card-body p-4">
+          <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+            <!-- Username Input -->
+            <div class="mb-3">
+              <label for="username" class="form-label">
+                <i class="bi bi-person me-1"></i>
+                Username
+              </label>
+              <input
+                type="text"
+                class="form-control"
+                id="username"
+                name="username"
+                [(ngModel)]="username"
+                required
+                [disabled]="isLoading"
+                placeholder="Enter your username"
+                autocomplete="username"
+              >
+            </div>
+
+            <!-- Password Input -->
+            <div class="mb-4">
+              <label for="password" class="form-label">
+                <i class="bi bi-lock me-1"></i>
+                Password
+              </label>
+              <input
+                type="password"
+                class="form-control"
+                id="password"
+                name="password"
+                [(ngModel)]="password"
+                required
+                [disabled]="isLoading"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+              >
+            </div>
+
+            <!-- Error Message -->
+            <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              {{ errorMessage }}
+            </div>
+
+            <!-- Submit Button -->
+            <div class="d-grid">
+              <button
+                type="submit"
+                class="btn btn-primary"
+                [disabled]="isLoading || !loginForm.form.valid"
+              >
+                <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <i *ngIf="!isLoading" class="bi bi-box-arrow-in-right me-2"></i>
+                {{ isLoading ? 'Signing In...' : 'Sign In' }}
+              </button>
+            </div>
+          </form>
+        </div>
+        <div class="card-footer text-center text-muted">
+          <small>
+            <strong>Default Login:</strong> Username: super, Password: 123
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,86 +1,18 @@
-# Node.js Dependencies
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
-# Angular Build Outputs
-dist/
-tmp/
-out-tsc/
-build/
+# Compiled output
+/dist
+/tmp
+/out-tsc
+/bazel-out
 
-# Environment Files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
 
-# JSON Data Files (Phase 1 - Local Storage Simulation)
-server/data/*.json
-server/data/backups/
-
-# IDE and Editor Files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Operating System Files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Logs
-logs/
-*.log
-
-# Runtime Data
-pids/
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage Directory Used by Tools like Istanbul
-coverage/
-*.lcov
-
-# NYC Test Coverage
-.nyc_output
-
-# Dependency Directories
-jspm_packages/
-
-# Optional npm Cache Directory
-.npm
-
-# Optional eslint Cache
-.eslintcache
-
-# Microbundle Cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
-
-# Optional REPL History
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity File
-.yarn-integrity
-
-# Angular Specific
 # IDEs and editors
-/.idea
+.idea/
 .project
 .classpath
 .c9/
@@ -88,33 +20,26 @@ jspm_packages/
 .settings/
 *.sublime-workspace
 
-# System Files
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
+
+# Miscellaneous
+/.angular/cache
+.sass-cache/
+/connect.lock
+/coverage
+/libpeerconnection.log
+testem.log
+/typings
+
+# System files
 .DS_Store
 Thumbs.db
 
-# Angular e2e
-/e2e/*.js
-/e2e/*.map
-
-# Planning and Development Documents (Keep Internal)
+# Planning documentation
 phase1_planning.md
-*.pdf
-
-# Sensitive Configuration
-config/keys.js
-config/keys_dev.js
-
-# Build artifacts
-*.tsbuildinfo
-
-# Temporary folders
-tmp/
-temp/
-
-# Editor backup files
-*~
-*.bak
-
-# Package lock files (optional - you can keep one)
-package-lock.json
-yarn.lock

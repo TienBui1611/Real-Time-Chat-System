@@ -1,0 +1,23 @@
+{
+  "users": [
+    {
+      "id": "user_001",
+      "username": "super",
+      "email": "super@chatapp.com",
+      "password": "123",
+      "roles": [
+        "superAdmin"
+      ],
+      "groups": [],
+      "createdAt": "2025-08-26T08:02:27.557Z",
+      "lastLogin": "2025-08-26T08:31:24.617Z",
+      "isActive": true
+    }
+  ],
+  "metadata": {
+    "lastModified": "2025-08-26T08:31:24.620Z",
+    "version": "1.0",
+    "totalUsers": 1,
+    "nextId": "user_002"
+  }
+}

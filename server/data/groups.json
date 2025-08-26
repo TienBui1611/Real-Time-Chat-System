@@ -1,0 +1,27 @@
+{
+  "groups": [
+    {
+      "id": "group_001",
+      "name": "General Discussion",
+      "description": "Default group for system testing",
+      "createdBy": "user_001",
+      "admins": [
+        "user_001"
+      ],
+      "members": [
+        "user_001"
+      ],
+      "channels": [
+        "channel_001"
+      ],
+      "createdAt": "2025-08-26T08:02:27.561Z",
+      "isActive": true
+    }
+  ],
+  "metadata": {
+    "lastModified": "2025-08-26T08:02:27.561Z",
+    "version": "1.0",
+    "totalGroups": 1,
+    "nextId": "group_002"
+  }
+}

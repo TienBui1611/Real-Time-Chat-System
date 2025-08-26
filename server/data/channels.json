@@ -1,0 +1,22 @@
+{
+  "channels": [
+    {
+      "id": "channel_001",
+      "name": "general",
+      "description": "Default channel for system testing",
+      "groupId": "group_001",
+      "createdBy": "user_001",
+      "members": [
+        "user_001"
+      ],
+      "createdAt": "2025-08-26T08:02:27.562Z",
+      "isActive": true
+    }
+  ],
+  "metadata": {
+    "lastModified": "2025-08-26T08:02:27.562Z",
+    "version": "1.0",
+    "totalChannels": 1,
+    "nextId": "channel_002"
+  }
+}

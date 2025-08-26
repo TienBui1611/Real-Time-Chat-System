@@ -1,0 +1,164 @@
+<div class="container-fluid">
+  <!-- Navigation Header -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">
+        <i class="bi bi-chat-dots me-2"></i>
+        Chat System
+      </a>
+      
+      <div class="navbar-nav ms-auto">
+        <div class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle me-1"></i>
+            {{ currentUser?.username || 'User' }}
+          </a>
+          <ul class="dropdown-menu">
+            <li><span class="dropdown-item-text">{{ currentUser?.email }}</span></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#" (click)="logout()">
+              <i class="bi bi-box-arrow-right me-2"></i>Logout
+            </a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Welcome Section -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h2 class="card-title">
+            Welcome back, {{ currentUser?.username }}!
+          </h2>
+          <p class="card-text text-muted">
+            You are logged in as:
+            <span class="badge bg-primary ms-2" *ngFor="let role of currentUser?.roles">
+              {{ role }}
+            </span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="row">
+    <div class="col-md-6 col-lg-4 mb-4" *ngIf="hasRole(UserRole.SUPER_ADMIN)">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <i class="bi bi-people display-4 text-primary mb-3"></i>
+          <h5 class="card-title">User Management</h5>
+          <p class="card-text">Create, edit, and manage user accounts. Promote users to admin roles.</p>
+          <button class="btn btn-primary" (click)="navigateToUsers()">
+            <i class="bi bi-arrow-right me-2"></i>
+            Manage Users
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4 mb-4" *ngIf="hasAnyRole([UserRole.GROUP_ADMIN, UserRole.SUPER_ADMIN])">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <i class="bi bi-collection display-4 text-success mb-3"></i>
+          <h5 class="card-title">Group Management</h5>
+          <p class="card-text">Create and manage groups. Add or remove members from groups.</p>
+          <button class="btn btn-success" (click)="navigateToGroups()">
+            <i class="bi bi-arrow-right me-2"></i>
+            Manage Groups
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <i class="bi bi-chat-square-dots display-4 text-info mb-3"></i>
+          <h5 class="card-title">My Groups</h5>
+          <p class="card-text">View groups you belong to and access available channels.</p>
+          <button class="btn btn-info" disabled>
+            <i class="bi bi-arrow-right me-2"></i>
+            View Groups
+          </button>
+          <small class="d-block text-muted mt-2">Coming in Phase 2</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <i class="bi bi-chat-text display-4 text-warning mb-3"></i>
+          <h5 class="card-title">Chat Rooms</h5>
+          <p class="card-text">Join chat rooms and start conversations with other users.</p>
+          <button class="btn btn-warning" disabled>
+            <i class="bi bi-arrow-right me-2"></i>
+            Enter Chat
+          </button>
+          <small class="d-block text-muted mt-2">Coming in Phase 2</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <i class="bi bi-camera-video display-4 text-danger mb-3"></i>
+          <h5 class="card-title">Video Chat</h5>
+          <p class="card-text">Start video calls with other users in your groups.</p>
+          <button class="btn btn-danger" disabled>
+            <i class="bi bi-arrow-right me-2"></i>
+            Video Call
+          </button>
+          <small class="d-block text-muted mt-2">Coming in Phase 2</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <i class="bi bi-gear display-4 text-secondary mb-3"></i>
+          <h5 class="card-title">Settings</h5>
+          <p class="card-text">Manage your profile, notifications, and application preferences.</p>
+          <button class="btn btn-secondary" disabled>
+            <i class="bi bi-arrow-right me-2"></i>
+            Settings
+          </button>
+          <small class="d-block text-muted mt-2">Coming in Phase 2</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Information -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">
+            <i class="bi bi-info-circle me-2"></i>
+            System Information
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <strong>Current Phase:</strong> Phase 1 - Authentication & User Management<br>
+              <strong>Your Roles:</strong> 
+              <span class="badge bg-secondary ms-1" *ngFor="let role of currentUser?.roles">{{ role }}</span>
+            </div>
+            <div class="col-md-6">
+              <strong>Features Available:</strong> Login/Logout, User Management (Super Admin), Group Management (Group Admin+)<br>
+              <strong>Coming in Phase 2:</strong> Real-time chat, Video calls, MongoDB integration
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

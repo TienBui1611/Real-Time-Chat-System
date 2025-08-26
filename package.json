@@ -1,0 +1,57 @@
+{
+  "name": "3813ict-chat-system",
+  "version": "1.0.0",
+  "description": "Chat System Assignment - Phase 1 (Authentication & User Management)",
+  "scripts": {
+    "ng": "ng",
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "client": "ng serve",
+    "server": "cd server && npm run dev",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "install-all": "npm install && cd server && npm install",
+    "setup": "npm run install-all",
+    "server-start": "cd server && npm start",
+    "client-start": "ng serve --open"
+  },
+  "prettier": {
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/common": "^20.1.0",
+    "@angular/compiler": "^20.1.0",
+    "@angular/core": "^20.1.0",
+    "@angular/forms": "^20.1.0",
+    "@angular/platform-browser": "^20.1.0",
+    "@angular/router": "^20.1.0",
+    "@ng-bootstrap/ng-bootstrap": "^19.0.1",
+    "bootstrap": "^5.3.7",
+    "bootstrap-icons": "^1.13.1",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^20.1.5",
+    "@angular/cli": "^20.1.5",
+    "@angular/compiler-cli": "^20.1.0",
+    "@types/jasmine": "~5.1.0",
+    "concurrently": "^8.2.2",
+    "jasmine-core": "~5.8.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.1.0",
+    "typescript": "~5.8.2"
+  }
+}
