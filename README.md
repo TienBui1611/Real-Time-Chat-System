@@ -27,7 +27,7 @@ A text/video chat system built using the MEAN stack with three user permission l
 │   │   ├── models/               // TypeScript interfaces
 │   │   └── guards/               // Route guards
 │   ├── index.html                // Main HTML file
-│   └── styles.scss               // Global styles with Bootstrap
+│   └── styles.css                // Global styles with Bootstrap
 ├── server/                       // Node.js backend application
 │   ├── routes/                   // Express route handlers
 │   ├── services/                 // Business logic services
@@ -200,7 +200,7 @@ interface Channel {
 - **Bootstrap 5** for professional UI
 - **Bootstrap Icons** for iconography
 - **TypeScript** for type safety
-- **SCSS** for custom styling
+- **CSS** for custom styling
 
 ### Backend (Node.js)
 
