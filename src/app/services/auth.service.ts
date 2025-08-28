@@ -16,8 +16,8 @@ export class AuthService {
     private http: HttpClient,
     private storageService: StorageService
   ) {
-    // Load user from storage on service initialization
-    this.loadUserFromStorage();
+    // Validate stored session on service initialization
+    this.initializeAuth();
   }
 
   login(username: string, password: string): Observable<AuthResponse> {
@@ -34,8 +34,23 @@ export class AuthService {
   }
 
   logout(): void {
-    this.http.post(`${this.API_URL}/logout`, {}).subscribe();
-    this.clearCurrentUser();
+    const token = this.getAuthToken();
+    const options = token 
+      ? { headers: { 'Authorization': `Bearer ${token}` } }
+      : {};
+    
+    this.http.post(`${this.API_URL}/logout`, {}, options).subscribe({
+      next: () => {
+        console.log('Logout successful');
+      },
+      error: (error) => {
+        console.error('Logout error:', error);
+        // Still clear local data even if server logout fails
+      },
+      complete: () => {
+        this.clearCurrentUser();
+      }
+    });
   }
 
   private setCurrentUser(user: User, token: string): void {
@@ -50,11 +65,30 @@ export class AuthService {
     this.storageService.remove('authToken');
   }
 
-  private loadUserFromStorage(): void {
+  private initializeAuth(): void {
     const user = this.storageService.loadCurrentUser();
-    if (user) {
-      this.currentUserSubject.next(user);
+    const token = this.storageService.load<string>('authToken');
+    
+    if (user && token) {
+      // Validate the stored token with the server
+      this.validateStoredSession(token, user);
     }
+  }
+
+  private validateStoredSession(token: string, user: User): void {
+    const headers = { 'Authorization': `Bearer ${token}` };
+    
+    this.http.get<{ user: User }>(`${this.API_URL}/current`, { headers }).subscribe({
+      next: (response) => {
+        // Token is valid, set the user
+        this.currentUserSubject.next(response.user);
+      },
+      error: (error) => {
+        console.warn('Stored session invalid, clearing local data:', error);
+        // Token is invalid or expired, clear local storage
+        this.clearCurrentUser();
+      }
+    });
   }
 
   getCurrentUser(): User | null {
@@ -67,12 +101,12 @@ export class AuthService {
 
   hasRole(role: UserRole): boolean {
     const user = this.getCurrentUser();
-    return user ? user.roles.includes(role) : false;
+    return user ? user.role === role : false;
   }
 
   hasAnyRole(roles: UserRole[]): boolean {
     const user = this.getCurrentUser();
-    return user ? roles.some(role => user.roles.includes(role)) : false;
+    return user ? roles.includes(user.role) : false;
   }
 
   isSuperAdmin(): boolean {
@@ -81,6 +115,11 @@ export class AuthService {
 
   isGroupAdmin(): boolean {
     return this.hasAnyRole([UserRole.GROUP_ADMIN, UserRole.SUPER_ADMIN]);
+  }
+
+  getUserRole(): UserRole | null {
+    const user = this.getCurrentUser();
+    return user ? user.role : null;
   }
 
   getAuthToken(): string | null {

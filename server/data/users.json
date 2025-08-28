@@ -5,19 +5,50 @@
       "username": "super",
       "email": "super@chatapp.com",
       "password": "123",
-      "roles": [
-        "superAdmin"
-      ],
+      "role": "superAdmin",
       "groups": [],
       "createdAt": "2025-08-26T08:02:27.557Z",
-      "lastLogin": "2025-08-28T09:19:17.911Z",
+      "lastLogin": "2025-08-28T10:31:00.994Z",
+      "isActive": true
+    },
+    {
+      "id": "user_4e75a359",
+      "username": "adminUser",
+      "email": "admin@chatapp.com",
+      "password": "123",
+      "role": "groupAdmin",
+      "groups": [],
+      "createdAt": "2025-08-28T09:46:16.288Z",
+      "lastLogin": "2025-08-28T10:21:06.791Z",
+      "isActive": true
+    },
+    {
+      "id": "user_5d33fabe",
+      "username": "regularUser",
+      "email": "regular@chatapp.com",
+      "password": "123",
+      "role": "user",
+      "groups": [],
+      "createdAt": "2025-08-28T10:10:35.798Z",
+      "lastLogin": "2025-08-28T10:20:40.240Z",
+      "isActive": true
+    },
+    {
+      "id": "user_88f8db83",
+      "username": "normal",
+      "email": "normal@chatapp.com",
+      "password": "123",
+      "role": "user",
+      "groups": [],
+      "createdAt": "2025-08-28T10:22:55.897Z",
+      "lastLogin": "2025-08-28T10:26:24.229Z",
       "isActive": true
     }
   ],
   "metadata": {
-    "lastModified": "2025-08-28T09:19:17.914Z",
+    "lastModified": "2025-08-28T10:31:00.997Z",
     "version": "1.0",
-    "totalUsers": 1,
-    "nextId": "user_002"
+    "totalUsers": 4,
+    "nextId": "user_a5eb9ba7"
   }
 }

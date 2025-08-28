@@ -96,7 +96,7 @@ interface User {
   id: string;
   username: string;
   email: string;
-  roles: UserRole[];
+  role: UserRole;  // Single role per user
   groups: string[];
   createdAt: Date;
   isActive: boolean;

@@ -1,0 +1,287 @@
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-0">
+        <i class="bi bi-people me-2"></i>
+        User Management
+      </h2>
+      <p class="text-muted mb-0">Manage system users and their roles</p>
+    </div>
+    <div>
+      <button 
+        class="btn btn-primary me-2" 
+        (click)="showCreateUserForm()"
+        [disabled]="isLoading"
+      >
+        <i class="bi bi-person-plus me-2"></i>
+        Create User
+      </button>
+      <a routerLink="/dashboard" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>
+        Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = ''" aria-label="Close"></button>
+  </div>
+
+  <!-- Search Bar -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="bi bi-search"></i>
+            </span>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Search users by username, email, or role..."
+              [(ngModel)]="searchQuery"
+              (input)="onSearch()"
+            >
+            <button 
+              class="btn btn-outline-secondary" 
+              type="button" 
+              (click)="clearSearch()"
+              *ngIf="searchQuery"
+            >
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-md-6 text-end">
+          <span class="text-muted">
+            Showing {{ filteredUsers.length }} of {{ users.length }} users
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading && !showCreateForm" class="text-center py-4">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="text-muted mt-2">Loading users...</p>
+  </div>
+
+  <!-- User Creation/Edit Form -->
+  <div *ngIf="showCreateForm" class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-person-plus me-2"></i>
+        {{ editingUser ? 'Edit User' : 'Create New User' }}
+      </h5>
+    </div>
+    <div class="card-body">
+      <form (ngSubmit)="onSubmitUser()" #userFormElement="ngForm">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="username" class="form-label">Username *</label>
+              <input
+                type="text"
+                class="form-control"
+                id="username"
+                name="username"
+                [(ngModel)]="userForm.username"
+                required
+                [disabled]="isLoading"
+              >
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="email" class="form-label">Email *</label>
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                name="email"
+                [(ngModel)]="userForm.email"
+                required
+                [disabled]="isLoading"
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="row" *ngIf="!editingUser">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="password" class="form-label">Password *</label>
+              <input
+                type="password"
+                class="form-control"
+                id="password"
+                name="password"
+                [(ngModel)]="userForm.password"
+                required
+                [disabled]="isLoading"
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">User Role *</label>
+          <div class="d-flex flex-wrap gap-3">
+            <div class="form-check" *ngFor="let role of [UserRole.USER, UserRole.GROUP_ADMIN, UserRole.SUPER_ADMIN]">
+              <input
+                class="form-check-input"
+                type="radio"
+                [id]="'role-' + role"
+                name="userRole"
+                [value]="role"
+                [checked]="isRoleSelected(role)"
+                (change)="selectRole(role)"
+                [disabled]="isLoading"
+              >
+              <label class="form-check-label" [for]="'role-' + role">
+                {{ getRoleDisplay(role) }}
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isLoading || !userFormElement.form.valid"
+          >
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+            <i *ngIf="!isLoading" class="bi bi-check me-2"></i>
+            {{ editingUser ? 'Update User' : 'Create User' }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="hideForm()"
+            [disabled]="isLoading"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Users Table -->
+  <div *ngIf="!isLoading || showCreateForm" class="card">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-table me-2"></i>
+        Users List
+      </h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Roles</th>
+              <th>Groups</th>
+              <th>Created</th>
+              <th>Last Login</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of filteredUsers">
+              <td>
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-person-circle text-muted me-2"></i>
+                  <strong>{{ user.username }}</strong>
+                </div>
+              </td>
+              <td>{{ user.email }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [class]="getRoleBadgeClass(user.role)"
+                >
+                  {{ getRoleDisplay(user.role) }}
+                </span>
+              </td>
+              <td>
+                <span class="text-muted">{{ user.groups.length }} groups</span>
+              </td>
+              <td>
+                <small class="text-muted">
+                  {{ user.createdAt | date: 'short' }}
+                </small>
+              </td>
+              <td>
+                <small class="text-muted">
+                  {{ user.lastLogin ? (user.lastLogin | date: 'short') : 'Never' }}
+                </small>
+              </td>
+              <td>
+                <span
+                  class="badge"
+                  [class]="user.isActive ? 'bg-success' : 'bg-secondary'"
+                >
+                  {{ user.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td>
+                <div class="btn-group btn-group-sm" role="group">
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary"
+                    (click)="showEditUserForm(user)"
+                    [disabled]="isLoading"
+                    title="Edit User"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger"
+                    (click)="deleteUser(user)"
+                    [disabled]="isLoading || !canDeleteUser(user)"
+                    title="Delete User"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Empty State -->
+      <div *ngIf="filteredUsers.length === 0 && !isLoading" class="text-center py-5">
+        <i class="bi bi-people display-1 text-muted"></i>
+        <h5 class="text-muted mt-3">
+          {{ searchQuery ? 'No users found matching your search' : 'No users found' }}
+        </h5>
+        <p class="text-muted">
+          {{ searchQuery ? 'Try adjusting your search criteria' : 'Create your first user to get started' }}
+        </p>
+        <button 
+          *ngIf="!searchQuery" 
+          class="btn btn-primary"
+          (click)="showCreateUserForm()"
+        >
+          <i class="bi bi-person-plus me-2"></i>
+          Create First User
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

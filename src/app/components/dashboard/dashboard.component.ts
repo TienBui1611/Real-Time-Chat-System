@@ -28,7 +28,10 @@ export class DashboardComponent implements OnInit {
 
   logout(): void {
     this.authService.logout();
-    this.router.navigate(['/login']);
+    // Navigate to login after logout
+    setTimeout(() => {
+      this.router.navigate(['/login']);
+    }, 100);
   }
 
   navigateToUsers(): void {

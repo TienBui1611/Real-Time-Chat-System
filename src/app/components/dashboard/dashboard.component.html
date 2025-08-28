@@ -35,8 +35,8 @@
           </h2>
           <p class="card-text text-muted">
             You are logged in as:
-            <span class="badge bg-primary ms-2" *ngFor="let role of currentUser?.roles">
-              {{ role }}
+            <span class="badge bg-primary ms-2">
+              {{ currentUser?.role }}
             </span>
           </p>
         </div>
@@ -149,8 +149,8 @@
           <div class="row">
             <div class="col-md-6">
               <strong>Current Phase:</strong> Phase 1 - Authentication & User Management<br>
-              <strong>Your Roles:</strong> 
-              <span class="badge bg-secondary ms-1" *ngFor="let role of currentUser?.roles">{{ role }}</span>
+              <strong>Your Role:</strong> 
+              <span class="badge bg-secondary ms-1">{{ currentUser?.role }}</span>
             </div>
             <div class="col-md-6">
               <strong>Features Available:</strong> Login/Logout, User Management (Super Admin), Group Management (Group Admin+)<br>

@@ -2,7 +2,7 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  roles: UserRole[];
+  role: UserRole;  // Changed from roles array to single role
   groups: string[];
   createdAt: Date;
   lastLogin?: Date;
@@ -13,13 +13,13 @@ export interface CreateUserRequest {
   username: string;
   email: string;
   password: string;
-  roles?: UserRole[];
+  role?: UserRole;  // Changed to single role
 }
 
 export interface UpdateUserRequest {
   username?: string;
   email?: string;
-  roles?: UserRole[];
+  role?: UserRole;  // Changed to single role
 }
 
 export enum UserRole {

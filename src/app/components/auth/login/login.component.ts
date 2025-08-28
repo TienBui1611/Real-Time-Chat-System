@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 
 @Component({
@@ -11,16 +11,31 @@ import { AuthService } from '../../../services/auth.service';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   username = '';
   password = '';
   isLoading = false;
   errorMessage = '';
+  returnUrl = '/dashboard';
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
+
+  ngOnInit(): void {
+    // Get return URL from route parameters or default to '/dashboard'
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+    
+    // Subscribe to authentication state changes
+    this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        // User is authenticated, redirect to return URL
+        this.router.navigate([this.returnUrl]);
+      }
+    });
+  }
 
   onSubmit(): void {
     if (!this.username || !this.password) {
@@ -34,7 +49,7 @@ export class LoginComponent {
     this.authService.login(this.username, this.password).subscribe({
       next: (response) => {
         if (response.success) {
-          this.router.navigate(['/dashboard']);
+          this.router.navigate([this.returnUrl]);
         } else {
           this.errorMessage = response.message || 'Login failed';
         }

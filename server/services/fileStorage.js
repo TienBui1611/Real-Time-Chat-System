@@ -95,7 +95,7 @@ class FileStorageService {
             username: 'super',
             email: 'super@chatapp.com',
             password: '123', // In Phase 1, we store plain text passwords
-            roles: ['superAdmin'],
+            role: 'superAdmin',  // Changed from roles array to single role
             groups: [],
             createdAt: new Date().toISOString(),
             lastLogin: null,
