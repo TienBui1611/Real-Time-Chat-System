@@ -5,15 +5,17 @@ const { v4: uuidv4 } = require('uuid');
 class FileStorageService {
   constructor() {
     this.dataPath = path.join(__dirname, '../data');
-    this.backupPath = path.join(this.dataPath, 'backups');
+    // Backup system removed - using Git for version control
+    // this.backupPath = path.join(this.dataPath, 'backups');
     this.initializeStorage();
   }
 
   async initializeStorage() {
     try {
-      // Ensure data and backup directories exist
+      // Ensure data directory exists
       await this.ensureDirectoryExists(this.dataPath);
-      await this.ensureDirectoryExists(this.backupPath);
+      // Backup directory no longer needed - using Git for version control
+      // await this.ensureDirectoryExists(this.backupPath);
 
       // Initialize default data files if they don't exist
       await this.initializeDataFiles();
@@ -44,9 +46,6 @@ class FileStorageService {
   async writeData(filename, data) {
     try {
       const filePath = path.join(this.dataPath, filename);
-      
-      // Create backup before writing
-      await this.createBackup(filename);
       
       // Update metadata
       data.metadata = {

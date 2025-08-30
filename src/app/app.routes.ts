@@ -25,6 +25,11 @@ export const routes: Routes = [
     canActivate: [AuthGuard, GroupAdminGuard]
   },
   {
+    path: 'my-groups',
+    loadComponent: () => import('./components/groups/my-groups/my-groups.component').then(m => m.MyGroupsComponent),
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'channels/:groupId',
     loadComponent: () => import('./components/channels/channel-list/channel-list.component').then(m => m.ChannelListComponent),
     canActivate: [AuthGuard]

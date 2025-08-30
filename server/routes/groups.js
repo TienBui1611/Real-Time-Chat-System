@@ -642,12 +642,38 @@ router.post('/:id/leave', authenticateToken, async (req, res) => {
       }
     }
 
+    // Also remove user from all channels in this group
+    const channelsData = await req.fileStorage.getChannels();
+    if (channelsData && channelsData.channels) {
+      let channelsModified = false;
+      
+      // Find all channels that belong to this group and remove the user
+      for (let i = 0; i < channelsData.channels.length; i++) {
+        const channel = channelsData.channels[i];
+        if (channel.groupId === id && channel.isActive) {
+          // Remove user from channel members
+          const originalMemberCount = channel.members.length;
+          channelsData.channels[i].members = channel.members.filter(memberId => memberId !== userId);
+          
+          if (channel.members.length !== originalMemberCount) {
+            channelsModified = true;
+          }
+        }
+      }
+      
+      // Save channels data if any modifications were made
+      if (channelsModified) {
+        channelsData.metadata.lastModified = new Date().toISOString();
+        await req.fileStorage.saveChannels(channelsData);
+      }
+    }
+
     groupsData.metadata.lastModified = new Date().toISOString();
     await req.fileStorage.saveGroups(groupsData);
 
     res.json({
       success: true,
-      message: 'Successfully left the group'
+      message: 'Successfully left the group and all its channels'
     });
   } catch (error) {
     console.error('Leave group error:', error);

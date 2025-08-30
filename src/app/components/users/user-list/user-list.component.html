@@ -192,10 +192,7 @@
               <th>Username</th>
               <th>Email</th>
               <th>Roles</th>
-              <th>Groups</th>
               <th>Created</th>
-              <th>Last Login</th>
-              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -217,25 +214,9 @@
                 </span>
               </td>
               <td>
-                <span class="text-muted">{{ user.groups.length }} groups</span>
-              </td>
-              <td>
                 <small class="text-muted">
                   {{ user.createdAt | date: 'short' }}
                 </small>
-              </td>
-              <td>
-                <small class="text-muted">
-                  {{ user.lastLogin ? (user.lastLogin | date: 'short') : 'Never' }}
-                </small>
-              </td>
-              <td>
-                <span
-                  class="badge"
-                  [class]="user.isActive ? 'bg-success' : 'bg-secondary'"
-                >
-                  {{ user.isActive ? 'Active' : 'Inactive' }}
-                </span>
               </td>
               <td>
                 <div class="btn-group btn-group-sm" role="group">

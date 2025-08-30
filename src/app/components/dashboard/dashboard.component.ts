@@ -42,6 +42,10 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/groups']);
   }
 
+  navigateToMyGroups(): void {
+    this.router.navigate(['/my-groups']);
+  }
+
   hasRole(role: UserRole): boolean {
     return this.authService.hasRole(role);
   }

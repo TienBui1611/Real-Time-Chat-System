@@ -1,0 +1,46 @@
+.group-card {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  border: 1px solid #dee2e6;
+}
+
+.group-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.badge {
+  font-size: 0.75rem;
+}
+
+.btn-group .btn {
+  flex: 1;
+}
+
+.border-end {
+  border-right: 1px solid #dee2e6 !important;
+}
+
+.text-truncate {
+  max-width: 200px;
+}
+
+/* Loading states */
+.btn:disabled {
+  opacity: 0.6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .text-truncate {
+    max-width: 150px;
+  }
+  
+  .btn-group .btn {
+    font-size: 0.875rem;
+  }
+}

@@ -80,83 +80,10 @@
           <i class="bi bi-chat-square-dots display-4 text-info mb-3"></i>
           <h5 class="card-title">My Groups</h5>
           <p class="card-text">View groups you belong to and access available channels.</p>
-          <button class="btn btn-info" disabled>
+          <button class="btn btn-info" (click)="navigateToMyGroups()">
             <i class="bi bi-arrow-right me-2"></i>
             View Groups
           </button>
-          <small class="d-block text-muted mt-2">Coming in Phase 2</small>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-6 col-lg-4 mb-4">
-      <div class="card h-100">
-        <div class="card-body text-center">
-          <i class="bi bi-chat-text display-4 text-warning mb-3"></i>
-          <h5 class="card-title">Chat Rooms</h5>
-          <p class="card-text">Join chat rooms and start conversations with other users.</p>
-          <button class="btn btn-warning" disabled>
-            <i class="bi bi-arrow-right me-2"></i>
-            Enter Chat
-          </button>
-          <small class="d-block text-muted mt-2">Coming in Phase 2</small>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-6 col-lg-4 mb-4">
-      <div class="card h-100">
-        <div class="card-body text-center">
-          <i class="bi bi-camera-video display-4 text-danger mb-3"></i>
-          <h5 class="card-title">Video Chat</h5>
-          <p class="card-text">Start video calls with other users in your groups.</p>
-          <button class="btn btn-danger" disabled>
-            <i class="bi bi-arrow-right me-2"></i>
-            Video Call
-          </button>
-          <small class="d-block text-muted mt-2">Coming in Phase 2</small>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-6 col-lg-4 mb-4">
-      <div class="card h-100">
-        <div class="card-body text-center">
-          <i class="bi bi-gear display-4 text-secondary mb-3"></i>
-          <h5 class="card-title">Settings</h5>
-          <p class="card-text">Manage your profile, notifications, and application preferences.</p>
-          <button class="btn btn-secondary" disabled>
-            <i class="bi bi-arrow-right me-2"></i>
-            Settings
-          </button>
-          <small class="d-block text-muted mt-2">Coming in Phase 2</small>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- System Information -->
-  <div class="row mt-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h6 class="mb-0">
-            <i class="bi bi-info-circle me-2"></i>
-            System Information
-          </h6>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-6">
-              <strong>Current Phase:</strong> Phase 1 - Authentication & User Management<br>
-              <strong>Your Role:</strong> 
-              <span class="badge bg-secondary ms-1">{{ currentUser?.role }}</span>
-            </div>
-            <div class="col-md-6">
-              <strong>Features Available:</strong> Login/Logout, User Management (Super Admin), Group Management (Group Admin+)<br>
-              <strong>Coming in Phase 2:</strong> Real-time chat, Video calls, MongoDB integration
-            </div>
-          </div>
         </div>
       </div>
     </div>
