@@ -141,6 +141,89 @@
     </div>
   </div>
 
+  <!-- Channel Member Management Form -->
+  <div *ngIf="showMemberManagement && managingChannel" class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-people me-2"></i>
+        Manage Members - {{ managingChannel.name }}
+      </h5>
+    </div>
+    <div class="card-body">
+      <!-- Current Members -->
+      <div class="mb-4">
+        <h6>Current Members ({{ channelMembers.length }})</h6>
+        <div class="row" *ngIf="channelMembers.length > 0">
+          <div class="col-md-6 mb-2" *ngFor="let member of channelMembers">
+            <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+              <div>
+                <strong>{{ member.username }}</strong>
+                <small class="text-muted d-block">{{ member.email }}</small>
+                <span class="badge" [class]="member.isCreator ? 'bg-danger' : 'bg-primary'">
+                  {{ member.isCreator ? 'Creator' : 'Member' }}
+                </span>
+              </div>
+              <button 
+                *ngIf="!member.isCreator"
+                class="btn btn-sm btn-outline-danger"
+                (click)="removeUserFromChannel(member.id)"
+                [disabled]="isLoading"
+                title="Remove from channel"
+              >
+                <i class="bi bi-x-circle"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <p *ngIf="channelMembers.length === 0" class="text-muted">No members found.</p>
+      </div>
+
+      <!-- Add New Member -->
+      <div class="mb-4">
+        <h6>Add New Member</h6>
+        <div class="row">
+          <div class="col-md-8">
+            <select 
+              class="form-select" 
+              [(ngModel)]="selectedUserId"
+              [disabled]="isLoading"
+            >
+              <option value="">Select a user to add...</option>
+              <option 
+                *ngFor="let user of availableChannelUsers" 
+                [value]="user.id"
+              >
+                {{ user.username }} ({{ user.email }}) - {{ user.role }}
+              </option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <button 
+              class="btn btn-success w-100"
+              (click)="addUserToChannel()"
+              [disabled]="isLoading || !selectedUserId"
+            >
+              <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+              <i *ngIf="!isLoading" class="bi bi-plus-circle me-2"></i>
+              Add Member
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="hideMemberManagement()"
+          [disabled]="isLoading"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Channels Grid -->
   <div *ngIf="!isLoading || showCreateForm" class="row">
     <div class="col-lg-4 col-md-6 mb-4" *ngFor="let channel of filteredChannels">
@@ -175,8 +258,13 @@
 
           <div class="d-flex flex-wrap gap-1 mb-3">
             <small class="text-muted">
+              <i class="bi bi-person me-1"></i>
+              Created by {{ getCreatorName(channel) }}
+            </small>
+            <br>
+            <small class="text-muted">
               <i class="bi bi-calendar3 me-1"></i>
-              Created {{ channel.createdAt | date: 'short' }}
+              {{ channel.createdAt | date: 'short' }}
             </small>
           </div>
         </div>
@@ -210,6 +298,11 @@
                 <li>
                   <a class="dropdown-item" href="#" (click)="showEditChannelForm(channel); $event.preventDefault()">
                     <i class="bi bi-pencil me-2"></i>Edit Channel
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#" (click)="showManageMembersForm(channel); $event.preventDefault()">
+                    <i class="bi bi-people me-2"></i>Manage Members
                   </a>
                 </li>
                 <li><hr class="dropdown-divider"></li>

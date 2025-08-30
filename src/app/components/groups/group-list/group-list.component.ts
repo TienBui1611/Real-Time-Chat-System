@@ -1,15 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { GroupService } from '../../../services/group.service';
 import { AuthService } from '../../../services/auth.service';
-import { Group, CreateGroupRequest, UserRole } from '../../../models';
+import { UserService } from '../../../services/user.service';
+import { Group, CreateGroupRequest, UserRole, User } from '../../../models';
 
 @Component({
   selector: 'app-group-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './group-list.component.html',
   styleUrls: ['./group-list.component.css']
 })
@@ -21,6 +22,16 @@ export class GroupListComponent implements OnInit {
   error = '';
   showCreateForm = false;
   editingGroup: Group | null = null;
+  
+  // Member management
+  showMemberManagement = false;
+  managingGroup: Group | null = null;
+  groupMembers: any[] = [];
+  availableUsers: User[] = [];
+  selectedUserId = '';
+  
+  // User lookup cache
+  userCache: Map<string, User> = new Map();
   
   // For group creation/editing
   groupForm: CreateGroupRequest = {
@@ -34,11 +45,15 @@ export class GroupListComponent implements OnInit {
   constructor(
     private groupService: GroupService,
     private authService: AuthService,
+    private userService: UserService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.loadGroups();
+    this.loadUsers().catch(error => {
+      console.error('Failed to load users on init:', error);
+    });
   }
 
   loadGroups(): void {
@@ -99,6 +114,31 @@ export class GroupListComponent implements OnInit {
     this.showCreateForm = false;
     this.editingGroup = null;
     this.resetForm();
+  }
+
+  showManageMembersForm(group: Group): void {
+    this.managingGroup = group;
+    this.showMemberManagement = true;
+    this.selectedUserId = '';
+    
+    // Ensure users are loaded before loading members and available users
+    if (this.userCache.size === 0) {
+      this.loadUsers().then(() => {
+        this.loadGroupMembers();
+        this.loadAvailableUsers();
+      });
+    } else {
+      this.loadGroupMembers();
+      this.loadAvailableUsers();
+    }
+  }
+
+  hideMemberManagement(): void {
+    this.showMemberManagement = false;
+    this.managingGroup = null;
+    this.groupMembers = [];
+    this.availableUsers = [];
+    this.selectedUserId = '';
   }
 
   resetForm(): void {
@@ -279,5 +319,126 @@ export class GroupListComponent implements OnInit {
     if (this.isAdmin(group)) return 'bg-warning';
     if (this.isGroupMember(group)) return 'bg-primary';
     return 'bg-secondary';
+  }
+
+  loadGroupMembers(): void {
+    if (!this.managingGroup) return;
+    
+    // Create member objects with proper user data
+    const allMemberIds = [...new Set([
+      ...this.managingGroup.members,
+      ...this.managingGroup.admins,
+      this.managingGroup.createdBy
+    ])];
+    
+    this.groupMembers = allMemberIds.map(memberId => {
+      const user = this.userCache.get(memberId);
+      return {
+        id: memberId,
+        username: user ? user.username : memberId,
+        email: user ? user.email : `${memberId}@example.com`,
+        isCreator: memberId === this.managingGroup!.createdBy,
+        isAdmin: this.managingGroup!.admins.includes(memberId)
+      };
+    });
+  }
+
+  loadAvailableUsers(): void {
+    if (!this.managingGroup) return;
+    
+    this.userService.getAllUsers().subscribe({
+      next: (response) => {
+        // Filter out users who are already members of the group
+        const currentMemberIds = new Set([
+          ...this.managingGroup!.members,
+          ...this.managingGroup!.admins,
+          this.managingGroup!.createdBy
+        ]);
+        
+        this.availableUsers = response.users.filter(user => 
+          user.isActive && !currentMemberIds.has(user.id)
+        );
+      },
+      error: (error) => {
+        this.error = error.error?.message || 'Failed to load available users';
+      }
+    });
+  }
+
+  addUserToGroup(): void {
+    if (!this.managingGroup || !this.selectedUserId) return;
+    
+    this.isLoading = true;
+    this.groupService.addUserToGroup(this.managingGroup.id, this.selectedUserId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.selectedUserId = '';
+          this.loadGroupMembers();
+          this.loadAvailableUsers();
+          this.loadGroups(); // Refresh the main groups list
+        } else {
+          this.error = response.message || 'Failed to add user to group';
+        }
+        this.isLoading = false;
+      },
+      error: (error) => {
+        this.error = error.error?.message || 'Failed to add user to group';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  removeUserFromGroup(userId: string): void {
+    if (!this.managingGroup) return;
+    
+    const member = this.groupMembers.find(m => m.id === userId);
+    if (!confirm(`Are you sure you want to remove ${member?.username} from this group?`)) {
+      return;
+    }
+    
+    this.isLoading = true;
+    this.groupService.removeUserFromGroup(this.managingGroup.id, userId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.loadGroupMembers();
+          this.loadAvailableUsers();
+          this.loadGroups(); // Refresh the main groups list
+        } else {
+          this.error = response.message || 'Failed to remove user from group';
+        }
+        this.isLoading = false;
+      },
+      error: (error) => {
+        this.error = error.error?.message || 'Failed to remove user from group';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadUsers(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.userService.getAllUsers().subscribe({
+        next: (response) => {
+          // Cache users for quick lookup
+          response.users.forEach(user => {
+            this.userCache.set(user.id, user);
+          });
+          resolve();
+        },
+        error: (error) => {
+          console.error('Failed to load users:', error);
+          reject(error);
+        }
+      });
+    });
+  }
+
+  getUsernameById(userId: string): string {
+    const user = this.userCache.get(userId);
+    return user ? user.username : userId; // Fallback to ID if user not found
+  }
+
+  getCreatorName(group: Group): string {
+    return this.getUsernameById(group.createdBy);
   }
 }

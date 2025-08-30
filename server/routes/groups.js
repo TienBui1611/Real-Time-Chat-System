@@ -142,6 +142,83 @@ router.get('/my-groups', authenticateToken, async (req, res) => {
   }
 });
 
+// Test route
+router.get('/test-members', (req, res) => {
+  res.json({ message: 'Test route works!' });
+});
+
+// GET /api/groups/:id/members - Get group members
+router.get('/:id/members', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const groupsData = await req.fileStorage.getGroups();
+    if (!groupsData) {
+      return res.status(500).json({
+        success: false,
+        error: 'STORAGE_ERROR',
+        message: 'Failed to access group data'
+      });
+    }
+
+    const group = groupsData.groups.find(g => g.id === id && g.isActive);
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        error: 'GROUP_NOT_FOUND',
+        message: 'Group not found'
+      });
+    }
+
+    // Check if user has access to this group
+    const hasAccess = req.user.role === 'superAdmin' || 
+                     group.members.includes(req.user.id) || 
+                     group.admins.includes(req.user.id) || 
+                     group.createdBy === req.user.id;
+
+    if (!hasAccess) {
+      return res.status(403).json({
+        success: false,
+        error: 'ACCESS_DENIED',
+        message: 'You do not have access to this group'
+      });
+    }
+
+    // Get user details for members
+    const usersData = await req.fileStorage.getUsers();
+    if (!usersData) {
+      return res.status(500).json({
+        success: false,
+        error: 'STORAGE_ERROR',
+        message: 'Failed to access user data'
+      });
+    }
+
+    const allMemberIds = [...new Set([...group.members, ...group.admins, group.createdBy])];
+    const members = allMemberIds.map(memberId => {
+      const user = usersData.users.find(u => u.id === memberId);
+      if (user) {
+        const { password, ...userWithoutPassword } = user;
+        return {
+          ...userWithoutPassword,
+          isCreator: memberId === group.createdBy,
+          isAdmin: group.admins.includes(memberId)
+        };
+      }
+      return null;
+    }).filter(Boolean);
+
+    res.json({ members });
+  } catch (error) {
+    console.error('Get group members error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to retrieve group members'
+    });
+  }
+});
+
 // GET /api/groups/:id - Get specific group
 router.get('/:id', authenticateToken, async (req, res) => {
   try {

@@ -5,7 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { ChannelService } from '../../../services/channel.service';
 import { GroupService } from '../../../services/group.service';
 import { AuthService } from '../../../services/auth.service';
-import { Channel, CreateChannelRequest, Group, UserRole } from '../../../models';
+import { UserService } from '../../../services/user.service';
+import { Channel, CreateChannelRequest, Group, UserRole, User } from '../../../models';
 
 @Component({
   selector: 'app-channel-list',
@@ -25,6 +26,16 @@ export class ChannelListComponent implements OnInit {
   showCreateForm = false;
   editingChannel: Channel | null = null;
   
+  // Member management
+  showMemberManagement = false;
+  managingChannel: Channel | null = null;
+  channelMembers: any[] = [];
+  availableChannelUsers: User[] = [];
+  selectedUserId = '';
+  
+  // User lookup cache
+  userCache: Map<string, User> = new Map();
+  
   // For channel creation/editing
   channelForm: CreateChannelRequest = {
     name: '',
@@ -39,6 +50,7 @@ export class ChannelListComponent implements OnInit {
     private channelService: ChannelService,
     private groupService: GroupService,
     private authService: AuthService,
+    private userService: UserService,
     private router: Router,
     private route: ActivatedRoute
   ) {}
@@ -48,6 +60,7 @@ export class ChannelListComponent implements OnInit {
       this.groupId = params['groupId'];
       if (this.groupId) {
         this.channelForm.groupId = this.groupId;
+        this.loadUsers();
         this.loadGroup();
         this.loadChannels();
       } else {
@@ -129,6 +142,22 @@ export class ChannelListComponent implements OnInit {
     this.showCreateForm = false;
     this.editingChannel = null;
     this.resetForm();
+  }
+
+  showManageMembersForm(channel: Channel): void {
+    this.managingChannel = channel;
+    this.showMemberManagement = true;
+    this.selectedUserId = '';
+    this.loadChannelMembers();
+    this.loadAvailableChannelUsers();
+  }
+
+  hideMemberManagement(): void {
+    this.showMemberManagement = false;
+    this.managingChannel = null;
+    this.channelMembers = [];
+    this.availableChannelUsers = [];
+    this.selectedUserId = '';
   }
 
   resetForm(): void {
@@ -331,5 +360,119 @@ export class ChannelListComponent implements OnInit {
       ...this.currentGroup.admins
     ]);
     return allMembers.size;
+  }
+
+  loadChannelMembers(): void {
+    if (!this.managingChannel) return;
+    
+    // Create member objects with proper user data
+    this.channelMembers = this.managingChannel.members.map(memberId => {
+      const user = this.userCache.get(memberId);
+      return {
+        id: memberId,
+        username: user ? user.username : memberId,
+        email: user ? user.email : `${memberId}@example.com`,
+        isCreator: memberId === this.managingChannel!.createdBy
+      };
+    });
+  }
+
+  loadAvailableChannelUsers(): void {
+    if (!this.managingChannel || !this.currentGroup) return;
+    
+    this.userService.getAllUsers().subscribe({
+      next: (response) => {
+        // Filter to only group members who are not already in the channel
+        const groupMemberIds = new Set([
+          ...this.currentGroup!.members,
+          ...this.currentGroup!.admins,
+          this.currentGroup!.createdBy
+        ]);
+        
+        const channelMemberIds = new Set(this.managingChannel!.members);
+        
+        this.availableChannelUsers = response.users.filter(user => 
+          user.isActive && 
+          groupMemberIds.has(user.id) && 
+          !channelMemberIds.has(user.id)
+        );
+      },
+      error: (error) => {
+        this.error = error.error?.message || 'Failed to load available users';
+      }
+    });
+  }
+
+  addUserToChannel(): void {
+    if (!this.managingChannel || !this.selectedUserId) return;
+    
+    this.isLoading = true;
+    this.channelService.addUserToChannel(this.managingChannel.id, this.selectedUserId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.selectedUserId = '';
+          this.loadChannels(); // Refresh the main channels list
+          this.loadChannelMembers();
+          this.loadAvailableChannelUsers();
+        } else {
+          this.error = response.message || 'Failed to add user to channel';
+        }
+        this.isLoading = false;
+      },
+      error: (error) => {
+        this.error = error.error?.message || 'Failed to add user to channel';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  removeUserFromChannel(userId: string): void {
+    if (!this.managingChannel) return;
+    
+    const member = this.channelMembers.find(m => m.id === userId);
+    if (!confirm(`Are you sure you want to remove ${member?.username} from this channel?`)) {
+      return;
+    }
+    
+    this.isLoading = true;
+    this.channelService.removeUserFromChannel(this.managingChannel.id, userId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.loadChannels(); // Refresh the main channels list
+          this.loadChannelMembers();
+          this.loadAvailableChannelUsers();
+        } else {
+          this.error = response.message || 'Failed to remove user from channel';
+        }
+        this.isLoading = false;
+      },
+      error: (error) => {
+        this.error = error.error?.message || 'Failed to remove user from channel';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadUsers(): void {
+    this.userService.getAllUsers().subscribe({
+      next: (response) => {
+        // Cache users for quick lookup
+        response.users.forEach(user => {
+          this.userCache.set(user.id, user);
+        });
+      },
+      error: (error) => {
+        console.error('Failed to load users:', error);
+      }
+    });
+  }
+
+  getUsernameById(userId: string): string {
+    const user = this.userCache.get(userId);
+    return user ? user.username : userId; // Fallback to ID if user not found
+  }
+
+  getCreatorName(channel: Channel): string {
+    return this.getUsernameById(channel.createdBy);
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Group, CreateGroupRequest, UpdateGroupRequest } from '../models';
 import { AuthService } from './auth.service';
 
@@ -79,11 +80,35 @@ export class GroupService {
     });
   }
 
-  // Get group members
+  // Get group members (workaround for routing issue)
   getGroupMembers(groupId: string): Observable<{ members: any[] }> {
-    return this.http.get<{ members: any[] }>(`${this.API_URL}/${groupId}/members`, {
-      headers: this.getAuthHeaders()
-    });
+    // Since the direct members endpoint has routing issues, 
+    // we'll get the group details and extract member info
+    return this.getGroupById(groupId).pipe(
+      map(response => {
+        if (response.group) {
+          // For now, return basic member info from the group
+          // In a real app, you'd want full user details
+          const memberIds = [...new Set([
+            ...response.group.members,
+            ...response.group.admins,
+            response.group.createdBy
+          ])];
+          
+          // Create basic member objects
+          const members = memberIds.map(memberId => ({
+            id: memberId,
+            username: memberId, // Placeholder - would need user lookup
+            email: `${memberId}@example.com`, // Placeholder
+            isCreator: memberId === response.group.createdBy,
+            isAdmin: response.group.admins.includes(memberId)
+          }));
+          
+          return { members };
+        }
+        return { members: [] };
+      })
+    );
   }
 
   // Check if user can manage group

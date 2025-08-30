@@ -535,4 +535,210 @@ router.post('/:id/leave', authenticateToken, async (req, res) => {
   }
 });
 
+// POST /api/channels/:id/members - Add user to channel (Group Admin+ only)
+router.post('/:id/members', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'User ID is required'
+      });
+    }
+
+    const channelsData = await req.fileStorage.getChannels();
+    if (!channelsData) {
+      return res.status(500).json({
+        success: false,
+        error: 'STORAGE_ERROR',
+        message: 'Failed to access channel data'
+      });
+    }
+
+    const channelIndex = channelsData.channels.findIndex(c => c.id === id && c.isActive);
+    if (channelIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: 'CHANNEL_NOT_FOUND',
+        message: 'Channel not found'
+      });
+    }
+
+    const channel = channelsData.channels[channelIndex];
+
+    // Get group data to check permissions
+    const groupsData = await req.fileStorage.getGroups();
+    if (!groupsData) {
+      return res.status(500).json({
+        success: false,
+        error: 'STORAGE_ERROR',
+        message: 'Failed to access group data'
+      });
+    }
+
+    const group = groupsData.groups.find(g => g.id === channel.groupId && g.isActive);
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        error: 'GROUP_NOT_FOUND',
+        message: 'Parent group not found'
+      });
+    }
+
+    // Check permissions - only group managers, channel creator, or super admin can add members
+    const canAddMembers = req.user.role === 'superAdmin' || 
+                         group.createdBy === req.user.id || 
+                         group.admins.includes(req.user.id) ||
+                         channel.createdBy === req.user.id;
+
+    if (!canAddMembers) {
+      return res.status(403).json({
+        success: false,
+        error: 'INSUFFICIENT_PERMISSIONS',
+        message: 'You do not have permission to add members to this channel'
+      });
+    }
+
+    // Check if user is already a member
+    if (channel.members.includes(userId)) {
+      return res.status(409).json({
+        success: false,
+        error: 'USER_ALREADY_MEMBER',
+        message: 'User is already a member of this channel'
+      });
+    }
+
+    // Check if user is a member of the parent group
+    const isGroupMember = group.members.includes(userId) || 
+                         group.admins.includes(userId) || 
+                         group.createdBy === userId;
+
+    if (!isGroupMember) {
+      return res.status(400).json({
+        success: false,
+        error: 'USER_NOT_IN_GROUP',
+        message: 'User must be a member of the parent group first'
+      });
+    }
+
+    // Add user to channel
+    channelsData.channels[channelIndex].members.push(userId);
+    channelsData.metadata.lastModified = new Date().toISOString();
+
+    await req.fileStorage.saveChannels(channelsData);
+
+    res.json({
+      success: true,
+      message: 'User added to channel successfully'
+    });
+  } catch (error) {
+    console.error('Add user to channel error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to add user to channel'
+    });
+  }
+});
+
+// DELETE /api/channels/:id/members/:userId - Remove user from channel
+router.delete('/:id/members/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+
+    const channelsData = await req.fileStorage.getChannels();
+    if (!channelsData) {
+      return res.status(500).json({
+        success: false,
+        error: 'STORAGE_ERROR',
+        message: 'Failed to access channel data'
+      });
+    }
+
+    const channelIndex = channelsData.channels.findIndex(c => c.id === id && c.isActive);
+    if (channelIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: 'CHANNEL_NOT_FOUND',
+        message: 'Channel not found'
+      });
+    }
+
+    const channel = channelsData.channels[channelIndex];
+
+    // Get group data to check permissions
+    const groupsData = await req.fileStorage.getGroups();
+    if (!groupsData) {
+      return res.status(500).json({
+        success: false,
+        error: 'STORAGE_ERROR',
+        message: 'Failed to access group data'
+      });
+    }
+
+    const group = groupsData.groups.find(g => g.id === channel.groupId && g.isActive);
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        error: 'GROUP_NOT_FOUND',
+        message: 'Parent group not found'
+      });
+    }
+
+    // Check permissions - group managers, channel creator, super admin, or the user themselves can remove
+    const canRemoveMembers = req.user.role === 'superAdmin' || 
+                            group.createdBy === req.user.id || 
+                            group.admins.includes(req.user.id) ||
+                            channel.createdBy === req.user.id ||
+                            req.user.id === userId; // Users can remove themselves
+
+    if (!canRemoveMembers) {
+      return res.status(403).json({
+        success: false,
+        error: 'INSUFFICIENT_PERMISSIONS',
+        message: 'You do not have permission to remove members from this channel'
+      });
+    }
+
+    // Cannot remove the channel creator
+    if (userId === channel.createdBy) {
+      return res.status(400).json({
+        success: false,
+        error: 'CANNOT_REMOVE_CREATOR',
+        message: 'Cannot remove the channel creator'
+      });
+    }
+
+    // Check if user is a member
+    if (!channel.members.includes(userId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'USER_NOT_MEMBER',
+        message: 'User is not a member of this channel'
+      });
+    }
+
+    // Remove user from channel
+    channelsData.channels[channelIndex].members = channel.members.filter(id => id !== userId);
+    channelsData.metadata.lastModified = new Date().toISOString();
+
+    await req.fileStorage.saveChannels(channelsData);
+
+    res.json({
+      success: true,
+      message: 'User removed from channel successfully'
+    });
+  } catch (error) {
+    console.error('Remove user from channel error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to remove user from channel'
+    });
+  }
+});
+
 module.exports = router;

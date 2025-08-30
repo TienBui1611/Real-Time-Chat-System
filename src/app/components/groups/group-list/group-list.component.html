@@ -140,6 +140,89 @@
     </div>
   </div>
 
+  <!-- Member Management Form -->
+  <div *ngIf="showMemberManagement && managingGroup" class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-people me-2"></i>
+        Manage Members - {{ managingGroup.name }}
+      </h5>
+    </div>
+    <div class="card-body">
+      <!-- Current Members -->
+      <div class="mb-4">
+        <h6>Current Members ({{ getMemberCount(managingGroup) }})</h6>
+        <div class="row" *ngIf="groupMembers.length > 0">
+          <div class="col-md-6 mb-2" *ngFor="let member of groupMembers">
+            <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+              <div>
+                <strong>{{ member.username }}</strong>
+                <small class="text-muted d-block">{{ member.email }}</small>
+                <span class="badge" [class]="member.isCreator ? 'bg-danger' : (member.isAdmin ? 'bg-warning' : 'bg-primary')">
+                  {{ member.isCreator ? 'Creator' : (member.isAdmin ? 'Admin' : 'Member') }}
+                </span>
+              </div>
+              <button 
+                *ngIf="!member.isCreator"
+                class="btn btn-sm btn-outline-danger"
+                (click)="removeUserFromGroup(member.id)"
+                [disabled]="isLoading"
+                title="Remove from group"
+              >
+                <i class="bi bi-x-circle"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <p *ngIf="groupMembers.length === 0" class="text-muted">No members found.</p>
+      </div>
+
+      <!-- Add New Member -->
+      <div class="mb-4">
+        <h6>Add New Member</h6>
+        <div class="row">
+          <div class="col-md-8">
+            <select 
+              class="form-select" 
+              [(ngModel)]="selectedUserId"
+              [disabled]="isLoading"
+            >
+              <option value="">Select a user to add...</option>
+              <option 
+                *ngFor="let user of availableUsers" 
+                [value]="user.id"
+              >
+                {{ user.username }} ({{ user.email }}) - {{ user.role }}
+              </option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <button 
+              class="btn btn-success w-100"
+              (click)="addUserToGroup()"
+              [disabled]="isLoading || !selectedUserId"
+            >
+              <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+              <i *ngIf="!isLoading" class="bi bi-plus-circle me-2"></i>
+              Add Member
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="hideMemberManagement()"
+          [disabled]="isLoading"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Groups Grid -->
   <div *ngIf="!isLoading || showCreateForm" class="row">
     <div class="col-lg-4 col-md-6 mb-4" *ngFor="let group of filteredGroups">
@@ -180,8 +263,13 @@
 
           <div class="d-flex flex-wrap gap-1 mb-3">
             <small class="text-muted">
+              <i class="bi bi-person me-1"></i>
+              Created by {{ getCreatorName(group) }}
+            </small>
+            <br>
+            <small class="text-muted">
               <i class="bi bi-calendar3 me-1"></i>
-              Created {{ group.createdAt | date: 'short' }}
+              {{ group.createdAt | date: 'short' }}
             </small>
           </div>
         </div>
@@ -215,6 +303,11 @@
                 <li>
                   <a class="dropdown-item" href="#" (click)="showEditGroupForm(group); $event.preventDefault()">
                     <i class="bi bi-pencil me-2"></i>Edit Group
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#" (click)="showManageMembersForm(group); $event.preventDefault()">
+                    <i class="bi bi-people me-2"></i>Manage Members
                   </a>
                 </li>
                 <li><hr class="dropdown-divider"></li>

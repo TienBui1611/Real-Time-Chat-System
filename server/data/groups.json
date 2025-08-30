@@ -2,21 +2,41 @@
   "groups": [
     {
       "id": "group_001",
-      "name": "General Discussion",
-      "description": "Default group for system testing",
+      "name": "General Group",
+      "description": "Default general group for all users",
+      "members": [
+        "super"
+      ],
+      "admins": [],
+      "createdBy": "super",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z",
+      "channels": [
+        "channel_001"
+      ],
+      "isActive": false
+    },
+    {
+      "id": "group_bb72d2f9",
+      "name": "General",
+      "description": "Created by super admin",
       "createdBy": "user_001",
       "admins": [
         "user_001"
       ],
       "members": [
-        "user_001"
+        "user_001",
+        "user_4e75a359",
+        "user_5d33fabe"
       ],
-      "channels": [],
-      "createdAt": "2025-08-26T08:02:27.561Z",
+      "channels": [
+        "channel_871a19c5"
+      ],
+      "createdAt": "2025-08-30T09:59:07.019Z",
       "isActive": true
     },
     {
-      "id": "group_6dfa6851",
+      "id": "group_acbfcec6",
       "name": "Test group",
       "description": "Created by group admin",
       "createdBy": "user_4e75a359",
@@ -24,68 +44,22 @@
         "user_4e75a359"
       ],
       "members": [
-        "user_4e75a359"
+        "user_4e75a359",
+        "user_5d33fabe",
+        "user_88f8db83"
       ],
       "channels": [
-        "channel_5bc55030"
+        "channel_ef8edbeb"
       ],
-      "createdAt": "2025-08-30T07:48:11.672Z",
-      "isActive": false
-    },
-    {
-      "id": "group_068d0604",
-      "name": "Test Group for Deletion",
-      "description": "Testing deletion functionality",
-      "createdBy": "user_4e75a359",
-      "admins": [
-        "user_4e75a359"
-      ],
-      "members": [
-        "user_4e75a359"
-      ],
-      "channels": [],
-      "createdAt": "2025-08-30T07:58:16.138Z",
-      "isActive": false
-    },
-    {
-      "id": "group_cf984cb0",
-      "name": "Test Group for Channels",
-      "description": "Testing channel functionality",
-      "createdBy": "user_4e75a359",
-      "admins": [
-        "user_4e75a359"
-      ],
-      "members": [
-        "user_4e75a359"
-      ],
-      "channels": [
-        "channel_63460e88"
-      ],
-      "createdAt": "2025-08-30T07:58:24.712Z",
-      "isActive": false
-    },
-    {
-      "id": "group_f9a8f21a",
-      "name": "Test",
-      "description": "Created by group admin",
-      "createdBy": "user_4e75a359",
-      "admins": [
-        "user_4e75a359"
-      ],
-      "members": [
-        "user_4e75a359"
-      ],
-      "channels": [
-        "channel_9da91638"
-      ],
-      "createdAt": "2025-08-30T08:10:59.826Z",
+      "createdAt": "2025-08-30T10:07:08.899Z",
       "isActive": true
     }
   ],
+  "lastId": 1,
   "metadata": {
-    "lastModified": "2025-08-30T08:12:39.296Z",
+    "lastModified": "2025-08-30T10:26:20.198Z",
     "version": "1.0",
-    "totalGroups": 5,
-    "nextId": "group_7bcd37be"
+    "totalGroups": 3,
+    "nextId": "group_33056746"
   }
 }

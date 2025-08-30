@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, requireSuperAdmin } = require('../middleware/auth');
+const { authenticateToken, requireSuperAdmin, requireGroupAdmin } = require('../middleware/auth');
 
-// GET /api/users - Get all users (Super Admin only)
-router.get('/', authenticateToken, requireSuperAdmin, async (req, res) => {
+// GET /api/users - Get all users (Super Admin and Group Admin)
+router.get('/', authenticateToken, requireGroupAdmin, async (req, res) => {
   try {
     const usersData = await req.fileStorage.getUsers();
     if (!usersData) {
