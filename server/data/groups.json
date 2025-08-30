@@ -11,17 +11,81 @@
       "members": [
         "user_001"
       ],
-      "channels": [
-        "channel_001"
-      ],
+      "channels": [],
       "createdAt": "2025-08-26T08:02:27.561Z",
+      "isActive": true
+    },
+    {
+      "id": "group_6dfa6851",
+      "name": "Test group",
+      "description": "Created by group admin",
+      "createdBy": "user_4e75a359",
+      "admins": [
+        "user_4e75a359"
+      ],
+      "members": [
+        "user_4e75a359"
+      ],
+      "channels": [
+        "channel_5bc55030"
+      ],
+      "createdAt": "2025-08-30T07:48:11.672Z",
+      "isActive": false
+    },
+    {
+      "id": "group_068d0604",
+      "name": "Test Group for Deletion",
+      "description": "Testing deletion functionality",
+      "createdBy": "user_4e75a359",
+      "admins": [
+        "user_4e75a359"
+      ],
+      "members": [
+        "user_4e75a359"
+      ],
+      "channels": [],
+      "createdAt": "2025-08-30T07:58:16.138Z",
+      "isActive": false
+    },
+    {
+      "id": "group_cf984cb0",
+      "name": "Test Group for Channels",
+      "description": "Testing channel functionality",
+      "createdBy": "user_4e75a359",
+      "admins": [
+        "user_4e75a359"
+      ],
+      "members": [
+        "user_4e75a359"
+      ],
+      "channels": [
+        "channel_63460e88"
+      ],
+      "createdAt": "2025-08-30T07:58:24.712Z",
+      "isActive": false
+    },
+    {
+      "id": "group_f9a8f21a",
+      "name": "Test",
+      "description": "Created by group admin",
+      "createdBy": "user_4e75a359",
+      "admins": [
+        "user_4e75a359"
+      ],
+      "members": [
+        "user_4e75a359"
+      ],
+      "channels": [
+        "channel_9da91638"
+      ],
+      "createdAt": "2025-08-30T08:10:59.826Z",
       "isActive": true
     }
   ],
   "metadata": {
-    "lastModified": "2025-08-26T08:02:27.561Z",
+    "lastModified": "2025-08-30T08:12:39.296Z",
     "version": "1.0",
-    "totalGroups": 1,
-    "nextId": "group_002"
+    "totalGroups": 5,
+    "nextId": "group_7bcd37be"
   }
 }

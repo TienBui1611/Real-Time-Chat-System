@@ -1,0 +1,277 @@
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-0">
+        <i class="bi bi-collection me-2"></i>
+        Group Management
+      </h2>
+      <p class="text-muted mb-0">Manage groups and their members</p>
+    </div>
+    <div>
+      <button 
+        *ngIf="canCreateGroups()"
+        class="btn btn-success me-2" 
+        (click)="showCreateGroupForm()"
+        [disabled]="isLoading"
+      >
+        <i class="bi bi-plus-circle me-2"></i>
+        Create Group
+      </button>
+      <a routerLink="/dashboard" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>
+        Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = ''" aria-label="Close"></button>
+  </div>
+
+  <!-- Search Bar -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="bi bi-search"></i>
+            </span>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Search groups by name or description..."
+              [(ngModel)]="searchQuery"
+              (input)="onSearch()"
+            >
+            <button 
+              class="btn btn-outline-secondary" 
+              type="button" 
+              (click)="clearSearch()"
+              *ngIf="searchQuery"
+            >
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-md-6 text-end">
+          <span class="text-muted">
+            Showing {{ filteredGroups.length }} of {{ groups.length }} groups
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading && !showCreateForm" class="text-center py-4">
+    <div class="spinner-border text-success" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="text-muted mt-2">Loading groups...</p>
+  </div>
+
+  <!-- Group Creation/Edit Form -->
+  <div *ngIf="showCreateForm" class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-plus-circle me-2"></i>
+        {{ editingGroup ? 'Edit Group' : 'Create New Group' }}
+      </h5>
+    </div>
+    <div class="card-body">
+      <form (ngSubmit)="onSubmitGroup()" #groupFormElement="ngForm">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="groupName" class="form-label">Group Name *</label>
+              <input
+                type="text"
+                class="form-control"
+                id="groupName"
+                name="groupName"
+                [(ngModel)]="groupForm.name"
+                required
+                [disabled]="isLoading"
+                placeholder="Enter group name"
+              >
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="groupDescription" class="form-label">Description</label>
+              <input
+                type="text"
+                class="form-control"
+                id="groupDescription"
+                name="groupDescription"
+                [(ngModel)]="groupForm.description"
+                [disabled]="isLoading"
+                placeholder="Enter group description (optional)"
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button
+            type="submit"
+            class="btn btn-success"
+            [disabled]="isLoading || !groupFormElement.form.valid"
+          >
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+            <i *ngIf="!isLoading" class="bi bi-check me-2"></i>
+            {{ editingGroup ? 'Update Group' : 'Create Group' }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="hideForm()"
+            [disabled]="isLoading"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Groups Grid -->
+  <div *ngIf="!isLoading || showCreateForm" class="row">
+    <div class="col-lg-4 col-md-6 mb-4" *ngFor="let group of filteredGroups">
+      <div class="card h-100 group-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 text-truncate me-2">
+            <i class="bi bi-collection me-2"></i>
+            {{ group.name }}
+          </h6>
+          <span 
+            class="badge"
+            [class]="getGroupRoleBadgeClass(group)"
+          >
+            {{ getGroupRole(group) }}
+          </span>
+        </div>
+        
+        <div class="card-body">
+          <p class="card-text text-muted small mb-3" *ngIf="group.description">
+            {{ group.description }}
+          </p>
+          <p class="card-text text-muted small mb-3" *ngIf="!group.description">
+            <em>No description provided</em>
+          </p>
+          
+          <div class="row text-center mb-3">
+            <div class="col-6">
+              <div class="border-end">
+                <h6 class="mb-0 text-primary">{{ getMemberCount(group) }}</h6>
+                <small class="text-muted">Members</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <h6 class="mb-0 text-success">{{ getChannelCount(group) }}</h6>
+              <small class="text-muted">Channels</small>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap gap-1 mb-3">
+            <small class="text-muted">
+              <i class="bi bi-calendar3 me-1"></i>
+              Created {{ group.createdAt | date: 'short' }}
+            </small>
+          </div>
+        </div>
+
+        <div class="card-footer bg-transparent">
+          <div class="btn-group w-100" role="group">
+            <!-- View Channels Button -->
+            <button
+              type="button"
+              class="btn btn-outline-primary btn-sm"
+              (click)="navigateToChannels(group.id)"
+              [disabled]="isLoading"
+              title="View Channels"
+            >
+              <i class="bi bi-chat-square-dots me-1"></i>
+              Channels
+            </button>
+
+            <!-- Management Dropdown -->
+            <div class="btn-group" role="group" *ngIf="canManageGroup(group)">
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                [disabled]="isLoading"
+              >
+                <i class="bi bi-gear"></i>
+              </button>
+              <ul class="dropdown-menu">
+                <li>
+                  <a class="dropdown-item" href="#" (click)="showEditGroupForm(group); $event.preventDefault()">
+                    <i class="bi bi-pencil me-2"></i>Edit Group
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item text-danger" href="#" (click)="deleteGroup(group); $event.preventDefault()">
+                    <i class="bi bi-trash me-2"></i>Delete Group
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Join/Leave Button -->
+            <button
+              *ngIf="!isGroupMember(group)"
+              type="button"
+              class="btn btn-outline-success btn-sm"
+              (click)="joinGroup(group)"
+              [disabled]="isLoading"
+              title="Join Group"
+            >
+              <i class="bi bi-plus-circle me-1"></i>
+              Join
+            </button>
+
+            <button
+              *ngIf="isGroupMember(group) && !isCreator(group)"
+              type="button"
+              class="btn btn-outline-warning btn-sm"
+              (click)="leaveGroup(group)"
+              [disabled]="isLoading"
+              title="Leave Group"
+            >
+              <i class="bi bi-box-arrow-right me-1"></i>
+              Leave
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="filteredGroups.length === 0 && !isLoading" class="text-center py-5">
+    <i class="bi bi-collection display-1 text-muted"></i>
+    <h5 class="text-muted mt-3">
+      {{ searchQuery ? 'No groups found matching your search' : 'No groups available' }}
+    </h5>
+    <p class="text-muted">
+      {{ searchQuery ? 'Try adjusting your search criteria' : 'Create your first group to get started' }}
+    </p>
+    <button 
+      *ngIf="!searchQuery && canCreateGroups()" 
+      class="btn btn-success"
+      (click)="showCreateGroupForm()"
+    >
+      <i class="bi bi-plus-circle me-2"></i>
+      Create First Group
+    </button>
+  </div>
+</div>

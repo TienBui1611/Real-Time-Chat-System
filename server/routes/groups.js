@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const { authenticateToken, requireGroupAdmin } = require('../middleware/auth');
 
 // GET /api/groups - Get all groups (filtered by user permissions)
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    // TODO: Add authentication and authorization middleware
     const groupsData = await req.fileStorage.getGroups();
     if (!groupsData) {
       return res.status(500).json({
@@ -14,8 +14,21 @@ router.get('/', async (req, res) => {
       });
     }
 
+    // Filter groups based on user permissions
+    const userGroups = groupsData.groups.filter(group => {
+      if (!group.isActive) return false;
+      
+      // Super Admin can see all groups
+      if (req.user.role === 'superAdmin') return true;
+      
+      // Users can see groups they are members of or created
+      return group.members.includes(req.user.id) || 
+             group.admins.includes(req.user.id) || 
+             group.createdBy === req.user.id;
+    });
+
     res.json({
-      groups: groupsData.groups.filter(group => group.isActive)
+      groups: userGroups
     });
   } catch (error) {
     console.error('Get groups error:', error);
@@ -28,7 +41,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/groups - Create new group (Group Admin+ only)
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, requireGroupAdmin, async (req, res) => {
   try {
     const { name, description = '' } = req.body;
 
@@ -40,8 +53,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // TODO: Get current user from authentication
-    const createdBy = 'user_001'; // Placeholder for now
+    const createdBy = req.user.id;
 
     const groupsData = await req.fileStorage.getGroups();
     if (!groupsData) {
@@ -99,6 +111,385 @@ router.post('/', async (req, res) => {
   }
 });
 
-// TODO: Implement other group routes
+// GET /api/groups/my-groups - Get current user's groups
+router.get('/my-groups', authenticateToken, async (req, res) => {
+  try {
+    const groupsData = await req.fileStorage.getGroups();
+    if (!groupsData) {
+      return res.status(500).json({
+        success: false,
+        error: 'STORAGE_ERROR',
+        message: 'Failed to access group data'
+      });
+    }
+
+    const userGroups = groupsData.groups.filter(group => 
+      group.isActive && (
+        group.members.includes(req.user.id) || 
+        group.admins.includes(req.user.id) || 
+        group.createdBy === req.user.id
+      )
+    );
+
+    res.json({ groups: userGroups });
+  } catch (error) {
+    console.error('Get user groups error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to retrieve user groups'
+    });
+  }
+});
+
+// GET /api/groups/:id - Get specific group
+router.get('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const groupsData = await req.fileStorage.getGroups();
+    
+    if (!groupsData) {
+      return res.status(500).json({
+        success: false,
+        error: 'STORAGE_ERROR',
+        message: 'Failed to access group data'
+      });
+    }
+
+    const group = groupsData.groups.find(g => g.id === id && g.isActive);
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        error: 'GROUP_NOT_FOUND',
+        message: 'Group not found'
+      });
+    }
+
+    // Check if user has access to this group
+    const hasAccess = req.user.role === 'superAdmin' || 
+                     group.members.includes(req.user.id) || 
+                     group.admins.includes(req.user.id) || 
+                     group.createdBy === req.user.id;
+
+    if (!hasAccess) {
+      return res.status(403).json({
+        success: false,
+        error: 'ACCESS_DENIED',
+        message: 'You do not have access to this group'
+      });
+    }
+
+    res.json({ group });
+  } catch (error) {
+    console.error('Get group by ID error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to retrieve group'
+    });
+  }
+});
+
+// PUT /api/groups/:id - Update group
+router.put('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description } = req.body;
+    
+    const groupsData = await req.fileStorage.getGroups();
+    if (!groupsData) {
+      return res.status(500).json({
+        success: false,
+        error: 'STORAGE_ERROR',
+        message: 'Failed to access group data'
+      });
+    }
+
+    const groupIndex = groupsData.groups.findIndex(g => g.id === id && g.isActive);
+    if (groupIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: 'GROUP_NOT_FOUND',
+        message: 'Group not found'
+      });
+    }
+
+    const group = groupsData.groups[groupIndex];
+
+    // Check permissions - only creator, admins, or super admin can update
+    const canUpdate = req.user.role === 'superAdmin' || 
+                     group.createdBy === req.user.id || 
+                     group.admins.includes(req.user.id);
+
+    if (!canUpdate) {
+      return res.status(403).json({
+        success: false,
+        error: 'INSUFFICIENT_PERMISSIONS',
+        message: 'You do not have permission to update this group'
+      });
+    }
+
+    // Update group fields
+    if (name && name !== group.name) {
+      // Check if new name already exists
+      const existingGroup = groupsData.groups.find(g => 
+        g.name === name && g.isActive && g.id !== id
+      );
+      if (existingGroup) {
+        return res.status(409).json({
+          success: false,
+          error: 'GROUP_NAME_EXISTS',
+          message: 'Group name already exists'
+        });
+      }
+      group.name = name;
+    }
+
+    if (description !== undefined) {
+      group.description = description;
+    }
+
+    groupsData.groups[groupIndex] = group;
+    await req.fileStorage.saveGroups(groupsData);
+
+    res.json({
+      success: true,
+      group: group
+    });
+  } catch (error) {
+    console.error('Update group error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to update group'
+    });
+  }
+});
+
+// DELETE /api/groups/:id - Delete group
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const groupsData = await req.fileStorage.getGroups();
+    if (!groupsData) {
+      return res.status(500).json({
+        success: false,
+        error: 'STORAGE_ERROR',
+        message: 'Failed to access group data'
+      });
+    }
+
+    const groupIndex = groupsData.groups.findIndex(g => g.id === id && g.isActive);
+    if (groupIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: 'GROUP_NOT_FOUND',
+        message: 'Group not found'
+      });
+    }
+
+    const group = groupsData.groups[groupIndex];
+
+    // Check permissions - only creator or super admin can delete
+    const canDelete = req.user.role === 'superAdmin' || group.createdBy === req.user.id;
+
+    if (!canDelete) {
+      return res.status(403).json({
+        success: false,
+        error: 'INSUFFICIENT_PERMISSIONS',
+        message: 'You do not have permission to delete this group'
+      });
+    }
+
+    // Soft delete - mark as inactive
+    group.isActive = false;
+    groupsData.groups[groupIndex] = group;
+
+    // Also deactivate all channels in this group
+    const channelsData = await req.fileStorage.getChannels();
+    if (channelsData) {
+      let channelsUpdated = false;
+      channelsData.channels.forEach(channel => {
+        if (channel.groupId === id && channel.isActive) {
+          channel.isActive = false;
+          channelsUpdated = true;
+        }
+      });
+      if (channelsUpdated) {
+        await req.fileStorage.saveChannels(channelsData);
+      }
+    }
+    
+    await req.fileStorage.saveGroups(groupsData);
+
+    res.json({
+      success: true,
+      message: 'Group deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete group error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to delete group'
+    });
+  }
+});
+
+// POST /api/groups/:id/members - Add user to group
+router.post('/:id/members', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'User ID is required'
+      });
+    }
+
+    const groupsData = await req.fileStorage.getGroups();
+    if (!groupsData) {
+      return res.status(500).json({
+        success: false,
+        error: 'STORAGE_ERROR',
+        message: 'Failed to access group data'
+      });
+    }
+
+    const groupIndex = groupsData.groups.findIndex(g => g.id === id && g.isActive);
+    if (groupIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: 'GROUP_NOT_FOUND',
+        message: 'Group not found'
+      });
+    }
+
+    const group = groupsData.groups[groupIndex];
+
+    // Check permissions - only admins, creator, or super admin can add members
+    const canAddMembers = req.user.role === 'superAdmin' || 
+                         group.createdBy === req.user.id || 
+                         group.admins.includes(req.user.id);
+
+    if (!canAddMembers) {
+      return res.status(403).json({
+        success: false,
+        error: 'INSUFFICIENT_PERMISSIONS',
+        message: 'You do not have permission to add members to this group'
+      });
+    }
+
+    // Check if user is already a member
+    if (group.members.includes(userId) || group.admins.includes(userId)) {
+      return res.status(409).json({
+        success: false,
+        error: 'USER_ALREADY_MEMBER',
+        message: 'User is already a member of this group'
+      });
+    }
+
+    // Verify user exists
+    const usersData = await req.fileStorage.getUsers();
+    const userExists = usersData && usersData.users.find(u => u.id === userId && u.isActive);
+    if (!userExists) {
+      return res.status(404).json({
+        success: false,
+        error: 'USER_NOT_FOUND',
+        message: 'User not found'
+      });
+    }
+
+    // Add user to group
+    group.members.push(userId);
+    groupsData.groups[groupIndex] = group;
+    await req.fileStorage.saveGroups(groupsData);
+
+    res.json({
+      success: true,
+      message: 'User added to group successfully'
+    });
+  } catch (error) {
+    console.error('Add member to group error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to add member to group'
+    });
+  }
+});
+
+// DELETE /api/groups/:id/members/:userId - Remove user from group
+router.delete('/:id/members/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+
+    const groupsData = await req.fileStorage.getGroups();
+    if (!groupsData) {
+      return res.status(500).json({
+        success: false,
+        error: 'STORAGE_ERROR',
+        message: 'Failed to access group data'
+      });
+    }
+
+    const groupIndex = groupsData.groups.findIndex(g => g.id === id && g.isActive);
+    if (groupIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: 'GROUP_NOT_FOUND',
+        message: 'Group not found'
+      });
+    }
+
+    const group = groupsData.groups[groupIndex];
+
+    // Check permissions - admins, creator, super admin, or the user themselves can remove
+    const canRemoveMembers = req.user.role === 'superAdmin' || 
+                            group.createdBy === req.user.id || 
+                            group.admins.includes(req.user.id) ||
+                            req.user.id === userId; // Users can remove themselves
+
+    if (!canRemoveMembers) {
+      return res.status(403).json({
+        success: false,
+        error: 'INSUFFICIENT_PERMISSIONS',
+        message: 'You do not have permission to remove members from this group'
+      });
+    }
+
+    // Cannot remove the creator
+    if (userId === group.createdBy) {
+      return res.status(400).json({
+        success: false,
+        error: 'CANNOT_REMOVE_CREATOR',
+        message: 'Cannot remove the group creator'
+      });
+    }
+
+    // Remove user from members and admins
+    group.members = group.members.filter(memberId => memberId !== userId);
+    group.admins = group.admins.filter(adminId => adminId !== userId);
+
+    groupsData.groups[groupIndex] = group;
+    await req.fileStorage.saveGroups(groupsData);
+
+    res.json({
+      success: true,
+      message: 'User removed from group successfully'
+    });
+  } catch (error) {
+    console.error('Remove member from group error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to remove member from group'
+    });
+  }
+});
 
 module.exports = router;

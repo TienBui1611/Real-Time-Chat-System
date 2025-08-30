@@ -3,6 +3,7 @@ import { LoginComponent } from './components/auth/login/login.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { AuthGuard } from './guards/auth.guard';
 import { SuperAdminGuard } from './guards/super-admin.guard';
+import { GroupAdminGuard } from './guards/group-admin.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -21,6 +22,11 @@ export const routes: Routes = [
   {
     path: 'groups',
     loadComponent: () => import('./components/groups/group-list/group-list.component').then(m => m.GroupListComponent),
+    canActivate: [AuthGuard, GroupAdminGuard]
+  },
+  {
+    path: 'channels/:groupId',
+    loadComponent: () => import('./components/channels/channel-list/channel-list.component').then(m => m.ChannelListComponent),
     canActivate: [AuthGuard]
   },
   // Catch-all route - redirect to login
