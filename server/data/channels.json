@@ -20,7 +20,9 @@
       "groupId": "group_bb72d2f9",
       "createdBy": "user_001",
       "members": [
-        "user_001"
+        "user_001",
+        "user_88f8db83",
+        "user_4e75a359"
       ],
       "createdAt": "2025-08-30T10:05:50.431Z",
       "isActive": true
@@ -37,14 +39,28 @@
         "user_88f8db83"
       ],
       "createdAt": "2025-08-30T10:18:20.039Z",
+      "isActive": false
+    },
+    {
+      "id": "channel_996f8f4e",
+      "name": "Test channel",
+      "description": "Created by group admin",
+      "groupId": "group_19a45f27",
+      "createdBy": "user_4e75a359",
+      "members": [
+        "user_4e75a359",
+        "user_88f8db83",
+        "user_54461be1"
+      ],
+      "createdAt": "2025-08-30T10:48:19.490Z",
       "isActive": true
     }
   ],
   "lastId": 1,
   "metadata": {
-    "lastModified": "2025-08-30T10:26:27.111Z",
+    "lastModified": "2025-08-30T10:53:35.976Z",
     "version": "1.0",
-    "totalChannels": 3,
-    "nextId": "channel_ea54a1d2"
+    "totalChannels": 4,
+    "nextId": "channel_d7e2d824"
   }
 }

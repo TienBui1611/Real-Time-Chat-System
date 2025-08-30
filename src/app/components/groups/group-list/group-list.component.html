@@ -321,7 +321,7 @@
 
             <!-- Join/Leave Button -->
             <button
-              *ngIf="!isGroupMember(group)"
+              *ngIf="!isGroupMember(group) && !isSuperAdmin()"
               type="button"
               class="btn btn-outline-success btn-sm"
               (click)="joinGroup(group)"
@@ -333,7 +333,7 @@
             </button>
 
             <button
-              *ngIf="isGroupMember(group) && !isCreator(group)"
+              *ngIf="isGroupMember(group)"
               type="button"
               class="btn btn-outline-warning btn-sm"
               (click)="leaveGroup(group)"

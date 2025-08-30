@@ -441,4 +441,9 @@ export class GroupListComponent implements OnInit {
   getCreatorName(group: Group): string {
     return this.getUsernameById(group.createdBy);
   }
+
+  isSuperAdmin(): boolean {
+    const currentUser = this.authService.getCurrentUser();
+    return currentUser?.role === UserRole.SUPER_ADMIN;
+  }
 }

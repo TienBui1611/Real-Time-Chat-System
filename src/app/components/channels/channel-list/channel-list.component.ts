@@ -475,4 +475,14 @@ export class ChannelListComponent implements OnInit {
   getCreatorName(channel: Channel): string {
     return this.getUsernameById(channel.createdBy);
   }
+
+  isGroupMember(): boolean {
+    if (!this.currentGroup) return false;
+    const currentUserId = this.getCurrentUserId();
+    if (!currentUserId) return false;
+    
+    return this.currentGroup.members.includes(currentUserId) || 
+           this.currentGroup.admins.includes(currentUserId) || 
+           this.currentGroup.createdBy === currentUserId;
+  }
 }

@@ -316,7 +316,7 @@
 
             <!-- Join/Leave Button -->
             <button
-              *ngIf="!isMember(channel)"
+              *ngIf="!isMember(channel) && isGroupMember()"
               type="button"
               class="btn btn-outline-success btn-sm"
               (click)="joinChannel(channel)"

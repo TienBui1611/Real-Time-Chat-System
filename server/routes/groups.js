@@ -569,4 +569,94 @@ router.delete('/:id/members/:userId', authenticateToken, async (req, res) => {
   }
 });
 
+// POST /api/groups/:id/leave - Leave group (any member can leave)
+router.post('/:id/leave', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const groupsData = await req.fileStorage.getGroups();
+    if (!groupsData) {
+      return res.status(500).json({
+        success: false,
+        error: 'STORAGE_ERROR',
+        message: 'Failed to access group data'
+      });
+    }
+
+    const groupIndex = groupsData.groups.findIndex(g => g.id === id && g.isActive);
+    if (groupIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: 'GROUP_NOT_FOUND',
+        message: 'Group not found'
+      });
+    }
+
+    const group = groupsData.groups[groupIndex];
+
+    // Check if user is a member of the group
+    const isMember = group.members.includes(userId) || 
+                    group.admins.includes(userId) || 
+                    group.createdBy === userId;
+
+    if (!isMember) {
+      return res.status(400).json({
+        success: false,
+        error: 'NOT_A_MEMBER',
+        message: 'You are not a member of this group'
+      });
+    }
+
+    // Remove user from members array
+    groupsData.groups[groupIndex].members = group.members.filter(id => id !== userId);
+    
+    // Remove user from admins array if they're an admin
+    groupsData.groups[groupIndex].admins = group.admins.filter(id => id !== userId);
+
+    // If the creator is leaving, we need to handle group ownership
+    if (group.createdBy === userId) {
+      // Option 1: Transfer ownership to first admin, or first member, or delete group
+      if (group.admins.length > 0) {
+        // Transfer to first admin (excluding the leaving user)
+        const remainingAdmins = group.admins.filter(id => id !== userId);
+        if (remainingAdmins.length > 0) {
+          groupsData.groups[groupIndex].createdBy = remainingAdmins[0];
+        } else if (group.members.filter(id => id !== userId).length > 0) {
+          // Transfer to first remaining member and make them admin
+          const remainingMembers = group.members.filter(id => id !== userId);
+          groupsData.groups[groupIndex].createdBy = remainingMembers[0];
+          groupsData.groups[groupIndex].admins.push(remainingMembers[0]);
+        } else {
+          // No one left, deactivate the group
+          groupsData.groups[groupIndex].isActive = false;
+        }
+      } else if (group.members.filter(id => id !== userId).length > 0) {
+        // No admins, transfer to first remaining member and make them admin
+        const remainingMembers = group.members.filter(id => id !== userId);
+        groupsData.groups[groupIndex].createdBy = remainingMembers[0];
+        groupsData.groups[groupIndex].admins.push(remainingMembers[0]);
+      } else {
+        // No one left, deactivate the group
+        groupsData.groups[groupIndex].isActive = false;
+      }
+    }
+
+    groupsData.metadata.lastModified = new Date().toISOString();
+    await req.fileStorage.saveGroups(groupsData);
+
+    res.json({
+      success: true,
+      message: 'Successfully left the group'
+    });
+  } catch (error) {
+    console.error('Leave group error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to leave group'
+    });
+  }
+});
+
 module.exports = router;

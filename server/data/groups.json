@@ -26,8 +26,9 @@
       ],
       "members": [
         "user_001",
-        "user_4e75a359",
-        "user_5d33fabe"
+        "user_88f8db83",
+        "user_54461be1",
+        "user_4e75a359"
       ],
       "channels": [
         "channel_871a19c5"
@@ -39,27 +40,46 @@
       "id": "group_acbfcec6",
       "name": "Test group",
       "description": "Created by group admin",
+      "createdBy": "user_5d33fabe",
+      "admins": [
+        "user_5d33fabe"
+      ],
+      "members": [
+        "user_5d33fabe",
+        "user_88f8db83",
+        "user_4e75a359"
+      ],
+      "channels": [
+        "channel_ef8edbeb"
+      ],
+      "createdAt": "2025-08-30T10:07:08.899Z",
+      "isActive": false
+    },
+    {
+      "id": "group_19a45f27",
+      "name": "Test group",
+      "description": "Created by group admin",
       "createdBy": "user_4e75a359",
       "admins": [
         "user_4e75a359"
       ],
       "members": [
         "user_4e75a359",
-        "user_5d33fabe",
-        "user_88f8db83"
+        "user_88f8db83",
+        "user_54461be1"
       ],
       "channels": [
-        "channel_ef8edbeb"
+        "channel_996f8f4e"
       ],
-      "createdAt": "2025-08-30T10:07:08.899Z",
+      "createdAt": "2025-08-30T10:48:01.721Z",
       "isActive": true
     }
   ],
   "lastId": 1,
   "metadata": {
-    "lastModified": "2025-08-30T10:26:20.198Z",
+    "lastModified": "2025-08-30T10:48:59.588Z",
     "version": "1.0",
-    "totalGroups": 3,
-    "nextId": "group_33056746"
+    "totalGroups": 4,
+    "nextId": "group_4c3a76db"
   }
 }

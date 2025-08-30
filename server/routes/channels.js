@@ -59,8 +59,9 @@ router.get('/group/:groupId', authenticateToken, async (req, res) => {
       // Super Admin can see all channels
       if (req.user.role === 'superAdmin') return true;
       
-      // Users can see channels they are members of or created
-      return channel.members.includes(req.user.id) || channel.createdBy === req.user.id;
+      // Group members can see all channels in the group (since they already have group access)
+      // The checkGroupAccess function above already verified they're group members
+      return true;
     });
 
     res.json({
