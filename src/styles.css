@@ -1,10 +1,3 @@
-/* You can add global styles to this file, and also import other style files */
-
-/* 
-  Bootstrap CSS and Icons are now imported via angular.json to avoid SCSS deprecation warnings.
-  This approach uses the compiled CSS versions instead of SCSS source files.
-*/
-
 /* Global styles for the chat application */
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
