@@ -66,6 +66,15 @@ npm run server  # Node.js API on http://localhost:3000
 
 - Username: `super`
 - Password: `123`
+- Role: Super Admin (full system access)
+
+### System Architecture
+
+- **Frontend**: Angular 18 with standalone components
+- **Backend**: Node.js Express with middleware-based authentication
+- **Authentication**: Bearer token system with localStorage persistence
+- **Authorization**: Role-based access control (RBAC)
+- **Data Storage**: JSON files with unique ID generation (UUID-based)
 
 ---
 
@@ -77,7 +86,7 @@ npm run server  # Node.js API on http://localhost:3000
 - **Node.js Express** server with modular architecture
 - **TypeScript models** for User, Group, Channel entities
 - **Route guards** for role-based access control
-- **JSON file storage** with automatic backups
+- **JSON file storage** with Git-based version control
 - **Professional UI** with responsive design
 
 ### ✅ Implementation Complete

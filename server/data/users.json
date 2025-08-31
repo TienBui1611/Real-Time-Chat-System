@@ -41,7 +41,7 @@
       "role": "user",
       "groups": [],
       "createdAt": "2025-08-30T10:46:59.470Z",
-      "lastLogin": "2025-08-30T12:10:39.443Z",
+      "lastLogin": "2025-08-31T03:04:00.211Z",
       "isActive": true
     },
     {
@@ -68,7 +68,7 @@
     }
   ],
   "metadata": {
-    "lastModified": "2025-08-31T02:55:43.952Z",
+    "lastModified": "2025-08-31T03:04:00.211Z",
     "version": "1.0",
     "totalUsers": 6,
     "nextId": "user_125a33fb"
