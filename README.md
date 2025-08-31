@@ -253,12 +253,12 @@ API endpoints use different response formats depending on the operation:
 
 #### Common Error Codes
 
-- `VALIDATION_ERROR` - Missing or invalid input data
-- `AUTHENTICATION_ERROR` - Invalid or missing authentication token
-- `AUTHORIZATION_ERROR` - Insufficient permissions for operation
-- `NOT_FOUND` - Requested resource does not exist
-- `CONFLICT` - Resource already exists (duplicate names, etc.)
-- `STORAGE_ERROR` - Database/file system operation failed
+* `VALIDATION_ERROR` - Missing or invalid input data
+* `AUTHENTICATION_ERROR` - Invalid or missing authentication token
+* `AUTHORIZATION_ERROR` - Insufficient permissions for operation
+* `NOT_FOUND` - Requested resource does not exist
+* `CONFLICT` - Resource already exists (duplicate names, etc.)
+* `STORAGE_ERROR` - Database/file system operation failed
 
 ---
 
