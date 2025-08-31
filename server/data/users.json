@@ -8,7 +8,7 @@
       "role": "superAdmin",
       "groups": [],
       "createdAt": "2025-08-26T08:02:27.557Z",
-      "lastLogin": "2025-08-31T02:54:03.805Z",
+      "lastLogin": "2025-08-31T03:35:30.506Z",
       "isActive": true
     },
     {
@@ -19,7 +19,7 @@
       "role": "groupAdmin",
       "groups": [],
       "createdAt": "2025-08-28T09:46:16.288Z",
-      "lastLogin": "2025-08-31T02:33:06.901Z",
+      "lastLogin": "2025-08-31T03:20:27.552Z",
       "isActive": true
     },
     {
@@ -41,18 +41,18 @@
       "role": "user",
       "groups": [],
       "createdAt": "2025-08-30T10:46:59.470Z",
-      "lastLogin": "2025-08-31T03:04:00.211Z",
+      "lastLogin": "2025-08-31T03:20:47.928Z",
       "isActive": true
     },
     {
       "id": "user_6be7b06f",
-      "username": "bossUser",
+      "username": "bossyUser",
       "email": "boss@chatapp.com",
       "password": "123",
       "role": "groupAdmin",
       "groups": [],
       "createdAt": "2025-08-30T11:34:28.868Z",
-      "lastLogin": "2025-08-31T02:55:43.952Z",
+      "lastLogin": "2025-08-31T03:35:08.961Z",
       "isActive": true
     },
     {
@@ -68,7 +68,7 @@
     }
   ],
   "metadata": {
-    "lastModified": "2025-08-31T03:04:00.211Z",
+    "lastModified": "2025-08-31T03:35:35.895Z",
     "version": "1.0",
     "totalUsers": 6,
     "nextId": "user_125a33fb"

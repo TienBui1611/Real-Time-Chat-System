@@ -68,6 +68,13 @@ npm run server  # Node.js API on http://localhost:3000
 - Password: `123`
 - Role: Super Admin (full system access)
 
+### Quick Troubleshooting
+
+- **Port conflicts**: Frontend runs on :4200, backend on :3000
+- **CORS issues**: Backend configured for localhost:4200 requests
+- **Authentication**: Clear localStorage if login issues occur
+- **Data reset**: Check `server/data/*.json` files for current state
+
 ### System Architecture
 
 - **Frontend**: Angular 18 with standalone components
@@ -199,9 +206,11 @@ interface Channel {
 
 ### 📋 API Response Format
 
-All API endpoints return consistent JSON responses:
+API endpoints use different response formats depending on the operation:
 
-#### Success Response
+#### Success Responses
+
+**Create/Update/Delete Operations:**
 
 ```json
 {
@@ -210,6 +219,25 @@ All API endpoints return consistent JSON responses:
   "group": { /* group object */ },
   "channel": { /* channel object */ },
   "message": "Operation completed successfully"
+}
+```
+
+**Get/Read Operations:**
+
+```json
+{
+  "user": { /* user object */ },
+  "group": { /* group object */ },
+  "channels": [ /* array of channels */ ],
+  "groups": [ /* array of groups */ ]
+}
+```
+
+**Validation Operations:**
+
+```json
+{
+  "available": true  // for username/email validation
 }
 ```
 
@@ -273,7 +301,7 @@ All API endpoints return consistent JSON responses:
 
 - **Express.js** web framework
 - **JSON file storage** for Phase 1
-- **Automatic backups** for data integrity
+- **Git-based version control** for data integrity
 - **CORS** enabled for frontend communication
 - **Modular route structure**
 
@@ -357,6 +385,7 @@ Based on the development timeline, commits include:
 - "Project Initial Setup with authentication and JSON storage" (Aug 25, 2025)
 - "Implemented prototype of Authentication and User Management" (Aug 28, 2025)
 - "Super and Group admins functionalities sorted out" (Aug 30, 2025)
+- "Documentation implementation + project features enhancement" (Aug 31, 2025)
 - "Group Management component done" (Aug 30, 2025)
 
 ### Approximate Development Timeline
@@ -365,6 +394,7 @@ Based on the development timeline, commits include:
 - **Aug 25, 2025**: Core authentication and storage implementation
 - **Aug 28, 2025**: User management system development
 - **Aug 30, 2025**: Group and channel management features completed
+- **Aug 31, 2025**: Proper documentation file written
 - **Consistent commits**: Regular updates showing iterative development approach
 
 ---
