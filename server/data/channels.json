@@ -80,13 +80,25 @@
       ],
       "createdAt": "2025-08-30T12:12:00.454Z",
       "isActive": true
+    },
+    {
+      "id": "channel_d78b7346",
+      "name": "Aboba channel",
+      "description": "Created by super ",
+      "groupId": "group_d38e15e1",
+      "createdBy": "user_001",
+      "members": [
+        "user_001"
+      ],
+      "createdAt": "2025-08-30T12:33:46.374Z",
+      "isActive": true
     }
   ],
   "lastId": 1,
   "metadata": {
-    "lastModified": "2025-08-30T12:12:24.928Z",
+    "lastModified": "2025-08-30T12:33:46.374Z",
     "version": "1.0",
-    "totalChannels": 6,
-    "nextId": "channel_7aaaeb06"
+    "totalChannels": 7,
+    "nextId": "channel_cc94c64e"
   }
 }
