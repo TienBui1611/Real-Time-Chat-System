@@ -8,7 +8,7 @@
       "role": "superAdmin",
       "groups": [],
       "createdAt": "2025-08-26T08:02:27.557Z",
-      "lastLogin": "2025-08-30T12:33:21.625Z",
+      "lastLogin": "2025-08-31T02:54:03.805Z",
       "isActive": true
     },
     {
@@ -19,7 +19,7 @@
       "role": "groupAdmin",
       "groups": [],
       "createdAt": "2025-08-28T09:46:16.288Z",
-      "lastLogin": "2025-08-30T12:34:26.219Z",
+      "lastLogin": "2025-08-31T02:33:06.901Z",
       "isActive": true
     },
     {
@@ -30,7 +30,7 @@
       "role": "user",
       "groups": [],
       "createdAt": "2025-08-28T10:22:55.897Z",
-      "lastLogin": "2025-08-30T12:12:12.046Z",
+      "lastLogin": "2025-08-31T02:54:36.161Z",
       "isActive": true
     },
     {
@@ -52,7 +52,7 @@
       "role": "groupAdmin",
       "groups": [],
       "createdAt": "2025-08-30T11:34:28.868Z",
-      "lastLogin": "2025-08-30T12:10:19.464Z",
+      "lastLogin": "2025-08-31T02:55:43.952Z",
       "isActive": true
     },
     {
@@ -68,7 +68,7 @@
     }
   ],
   "metadata": {
-    "lastModified": "2025-08-30T12:34:26.219Z",
+    "lastModified": "2025-08-31T02:55:43.952Z",
     "version": "1.0",
     "totalUsers": 6,
     "nextId": "user_125a33fb"
