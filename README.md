@@ -373,7 +373,7 @@ The project follows a clean, organized structure with clear separation of fronte
 ### Development Workflow
 
 - **Branching Strategy**: Main branch development with feature-based commits
-- **Commit Frequency**: 20+ commits made regularly from Aug 14 2025 showing consistent development
+- **Commit Frequency**: 30 commits made regularly from Aug 14 2025 showing consistent development
 - **Development Period**: around 15+ days of active development with commits spanning multiple weeks
 - **Version Control**: Git used for all code changes and project history tracking
 - **Repository Management**: Clean structure with node_modules excluded via .gitignore
@@ -386,8 +386,9 @@ Based on the development timeline, commits include:
 - "Project Initial Setup with authentication and JSON storage" (Aug 25, 2025)
 - "Implemented prototype of Authentication and User Management" (Aug 28, 2025)
 - "Super and Group admins functionalities sorted out" (Aug 30, 2025)
-- "Documentation implementation + project features enhancement" (Aug 31, 2025)
 - "Group Management component done" (Aug 30, 2025)
+- "Documentation implementation + project features enhancement" (Aug 31, 2025)
+- "Minor project updates, polished some UI features and styling" (September 2, 2025)
 
 ### Approximate Development Timeline
 
@@ -396,6 +397,7 @@ Based on the development timeline, commits include:
 - **Aug 28, 2025**: User management system development
 - **Aug 30, 2025**: Group and channel management features completed
 - **Aug 31, 2025**: Proper documentation file written
+- **Sep 2, 2025**: Final UI refinements, bug fixes, and project polishing before submission
 - **Consistent commits**: Regular updates showing iterative development approach
 
 ---
