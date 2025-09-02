@@ -9,8 +9,8 @@ A text/video chat system built using the MEAN stack with three user permission l
 **Assignment Details:**
 
 - **Course:** 3813ICT Software Frameworks
-- **Student**: Vo Viet Tien Bui - s5325217  
-- **Phase:** 1 - Planning, Authentication & Basic UI  
+- **Student**: Vo Viet Tien Bui - s5325217
+- **Phase:** 1 - Planning, Authentication & Basic UI
 - **Technology Stack:** Angular + Node.js + Bootstrap
 - **Data Storage:** JSON files (Phase 1) → MongoDB (Phase 2)
 
