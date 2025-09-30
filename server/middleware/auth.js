@@ -38,17 +38,11 @@ const authenticateToken = async (req, res, next) => {
 
     const userId = tokenWithoutPrefix.substring(0, lastUnderscoreIndex);
 
-    // Get user from storage
-    const usersData = await req.fileStorage.getUsers();
-    if (!usersData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access user data'
-      });
-    }
-
-    const user = usersData.users.find(u => u.id === userId && u.isActive);
+    // Get user from MongoDB
+    const user = await req.mongodb.users.findOne({
+      _id: userId,
+      isActive: true
+    });
     
     if (!user) {
       return res.status(401).json({

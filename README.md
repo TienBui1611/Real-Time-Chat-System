@@ -90,7 +90,7 @@ npm run server  # Node.js API on http://localhost:3000
 
 ### ✅ Project Foundation
 
-- **Angular 18** project with Bootstrap 5 integration
+- **Angular 20.1** project with Bootstrap 5 integration
 - **Node.js Express** server with modular architecture
 - **TypeScript models** for User, Group, Channel entities
 - **Route guards** for role-based access control
@@ -292,7 +292,7 @@ API endpoints use different response formats depending on the operation:
 
 ### Frontend (Angular)
 
-- **Angular 18** with standalone components
+- **Angular 20.1** with standalone components
 - **Bootstrap 5** for professional UI
 - **Bootstrap Icons** for iconography
 - **TypeScript** for type safety

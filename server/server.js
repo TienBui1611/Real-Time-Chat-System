@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 
 // Import services
-const FileStorageService = require('./services/fileStorage');
+const MongoDBService = require('./services/mongodb');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -16,8 +16,8 @@ const channelRoutes = require('./routes/channels');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize file storage service
-const fileStorage = new FileStorageService();
+// Initialize MongoDB service
+const mongodb = new MongoDBService();
 
 // Middleware
 app.use(cors({
@@ -27,9 +27,11 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Make file storage available to all routes
+// Make MongoDB service available to all routes
 app.use((req, res, next) => {
-  req.fileStorage = fileStorage;
+  req.mongodb = mongodb;
+  // Keep fileStorage for backward compatibility during transition
+  req.fileStorage = mongodb;
   next();
 });
 
@@ -40,10 +42,16 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/channels', channelRoutes);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+  const mongoStatus = await mongodb.isConnected();
   res.json({ 
-    status: 'OK', 
+    status: mongoStatus ? 'OK' : 'WARNING', 
     message: 'Chat System Server is running',
+    database: {
+      type: 'MongoDB',
+      status: mongoStatus ? 'Connected' : 'Disconnected',
+      name: 'chatApp'
+    },
     timestamp: new Date().toISOString()
   });
 });
@@ -68,9 +76,56 @@ app.use('*', (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Chat System Server running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/api/health`);
-  console.log(`CORS enabled for: http://localhost:4200`);
+// Start server with MongoDB connection
+async function startServer() {
+  try {
+    // Connect to MongoDB first
+    await mongodb.connect();
+    console.log('✅ MongoDB connected successfully');
+
+    // Start Express server
+    app.listen(PORT, () => {
+      console.log(`🚀 Chat System Server running on port ${PORT}`);
+      console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`🌐 CORS enabled for: http://localhost:4200`);
+      console.log(`🗄️  Database: MongoDB (chatApp)`);
+    });
+
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+// Handle graceful shutdown for multiple signals
+const gracefulShutdown = async (signal) => {
+  console.log(`\n🛑 Received ${signal}. Shutting down server gracefully...`);
+  try {
+    await mongodb.disconnect();
+    console.log('✅ MongoDB disconnected');
+    console.log('✅ Server shutdown complete');
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error during shutdown:', error);
+    process.exit(1);
+  }
+};
+
+// Handle different termination signals
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));   // Ctrl+C
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM')); // Process termination
+process.on('SIGQUIT', () => gracefulShutdown('SIGQUIT')); // Quit signal
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  gracefulShutdown('uncaughtException');
 });
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown('unhandledRejection');
+});
+
+// Start the server
+startServer();

@@ -5,30 +5,32 @@ const { authenticateToken, requireGroupAdmin } = require('../middleware/auth');
 // GET /api/groups - Get all groups (filtered by user permissions)
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const groupsData = await req.fileStorage.getGroups();
-    if (!groupsData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access group data'
-      });
+    let groups;
+    
+    // Filter groups based on user permissions
+    if (req.user.role === 'superAdmin') {
+      // Super Admin can see all groups
+      groups = await req.mongodb.groups.find({ isActive: true }).toArray();
+    } else {
+      // Users can see groups they are members of, admins of, or created
+      groups = await req.mongodb.groups.find({
+        isActive: true,
+        $or: [
+          { members: req.user._id },
+          { admins: req.user._id },
+          { createdBy: req.user._id }
+        ]
+      }).toArray();
     }
 
-    // Filter groups based on user permissions
-    const userGroups = groupsData.groups.filter(group => {
-      if (!group.isActive) return false;
-      
-      // Super Admin can see all groups
-      if (req.user.role === 'superAdmin') return true;
-      
-      // Users can see groups they are members of or created
-      return group.members.includes(req.user.id) || 
-             group.admins.includes(req.user.id) || 
-             group.createdBy === req.user.id;
-    });
+    // Transform _id to id for frontend compatibility
+    const groupsWithId = groups.map(group => ({
+      ...group,
+      id: group._id
+    }));
 
     res.json({
-      groups: userGroups
+      groups: groupsWithId
     });
   } catch (error) {
     console.error('Get groups error:', error);
@@ -36,6 +38,37 @@ router.get('/', authenticateToken, async (req, res) => {
       success: false,
       error: 'INTERNAL_ERROR',
       message: 'Failed to retrieve groups'
+    });
+  }
+});
+
+// GET /api/groups/my-groups - Get current user's groups
+router.get('/my-groups', authenticateToken, async (req, res) => {
+  try {
+    const groups = await req.mongodb.groups.find({
+      isActive: true,
+      $or: [
+        { members: req.user._id },
+        { admins: req.user._id },
+        { createdBy: req.user._id }
+      ]
+    }).toArray();
+
+    // Transform _id to id for frontend compatibility
+    const groupsWithId = groups.map(group => ({
+      ...group,
+      id: group._id
+    }));
+
+    res.json({
+      groups: groupsWithId
+    });
+  } catch (error) {
+    console.error('Get my groups error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to retrieve user groups'
     });
   }
 });
@@ -53,21 +86,13 @@ router.post('/', authenticateToken, requireGroupAdmin, async (req, res) => {
       });
     }
 
-    const createdBy = req.user.id;
-
-    const groupsData = await req.fileStorage.getGroups();
-    if (!groupsData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access group data'
-      });
-    }
+    const createdBy = req.user._id;
 
     // Check if group name already exists
-    const existingGroup = groupsData.groups.find(g => 
-      g.name === name && g.isActive
-    );
+    const existingGroup = await req.mongodb.groups.findOne({
+      name: name,
+      isActive: true
+    });
 
     if (existingGroup) {
       return res.status(409).json({
@@ -79,26 +104,28 @@ router.post('/', authenticateToken, requireGroupAdmin, async (req, res) => {
 
     // Create new group
     const newGroup = {
-      id: req.fileStorage.generateId('group'),
+      _id: req.mongodb.generateId('group'),
       name,
       description,
       createdBy,
       admins: [createdBy],
       members: [createdBy],
       channels: [],
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
       isActive: true
     };
 
-    groupsData.groups.push(newGroup);
-    groupsData.metadata.totalGroups = groupsData.groups.length;
-    groupsData.metadata.nextId = req.fileStorage.generateId('group');
+    await req.mongodb.groups.insertOne(newGroup);
 
-    await req.fileStorage.saveGroups(groupsData);
+    // Transform _id to id for frontend compatibility
+    const groupWithId = {
+      ...newGroup,
+      id: newGroup._id
+    };
 
     res.status(201).json({
       success: true,
-      group: newGroup
+      group: groupWithId
     });
 
   } catch (error) {
@@ -111,129 +138,12 @@ router.post('/', authenticateToken, requireGroupAdmin, async (req, res) => {
   }
 });
 
-// GET /api/groups/my-groups - Get current user's groups
-router.get('/my-groups', authenticateToken, async (req, res) => {
-  try {
-    const groupsData = await req.fileStorage.getGroups();
-    if (!groupsData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access group data'
-      });
-    }
-
-    const userGroups = groupsData.groups.filter(group => 
-      group.isActive && (
-        group.members.includes(req.user.id) || 
-        group.admins.includes(req.user.id) || 
-        group.createdBy === req.user.id
-      )
-    );
-
-    res.json({ groups: userGroups });
-  } catch (error) {
-    console.error('Get user groups error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'INTERNAL_ERROR',
-      message: 'Failed to retrieve user groups'
-    });
-  }
-});
-
-// Test route
-router.get('/test-members', (req, res) => {
-  res.json({ message: 'Test route works!' });
-});
-
-// GET /api/groups/:id/members - Get group members
-router.get('/:id/members', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const groupsData = await req.fileStorage.getGroups();
-    if (!groupsData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access group data'
-      });
-    }
-
-    const group = groupsData.groups.find(g => g.id === id && g.isActive);
-    if (!group) {
-      return res.status(404).json({
-        success: false,
-        error: 'GROUP_NOT_FOUND',
-        message: 'Group not found'
-      });
-    }
-
-    // Check if user has access to this group
-    const hasAccess = req.user.role === 'superAdmin' || 
-                     group.members.includes(req.user.id) || 
-                     group.admins.includes(req.user.id) || 
-                     group.createdBy === req.user.id;
-
-    if (!hasAccess) {
-      return res.status(403).json({
-        success: false,
-        error: 'ACCESS_DENIED',
-        message: 'You do not have access to this group'
-      });
-    }
-
-    // Get user details for members
-    const usersData = await req.fileStorage.getUsers();
-    if (!usersData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access user data'
-      });
-    }
-
-    const allMemberIds = [...new Set([...group.members, ...group.admins, group.createdBy])];
-    const members = allMemberIds.map(memberId => {
-      const user = usersData.users.find(u => u.id === memberId);
-      if (user) {
-        const { password, ...userWithoutPassword } = user;
-        return {
-          ...userWithoutPassword,
-          isCreator: memberId === group.createdBy,
-          isAdmin: group.admins.includes(memberId)
-        };
-      }
-      return null;
-    }).filter(Boolean);
-
-    res.json({ members });
-  } catch (error) {
-    console.error('Get group members error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'INTERNAL_ERROR',
-      message: 'Failed to retrieve group members'
-    });
-  }
-});
-
-// GET /api/groups/:id - Get specific group
+// GET /api/groups/:id - Get specific group details
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const groupsData = await req.fileStorage.getGroups();
-    
-    if (!groupsData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access group data'
-      });
-    }
+    const group = await req.mongodb.groups.findOne({ _id: id, isActive: true });
 
-    const group = groupsData.groups.find(g => g.id === id && g.isActive);
     if (!group) {
       return res.status(404).json({
         success: false,
@@ -243,10 +153,10 @@ router.get('/:id', authenticateToken, async (req, res) => {
     }
 
     // Check if user has access to this group
-    const hasAccess = req.user.role === 'superAdmin' || 
-                     group.members.includes(req.user.id) || 
-                     group.admins.includes(req.user.id) || 
-                     group.createdBy === req.user.id;
+    const hasAccess = req.user.role === 'superAdmin' ||
+                     group.members.includes(req.user._id) ||
+                     group.admins.includes(req.user._id) ||
+                     group.createdBy === req.user._id;
 
     if (!hasAccess) {
       return res.status(403).json({
@@ -256,7 +166,14 @@ router.get('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    res.json({ group });
+    // Transform _id to id for frontend compatibility
+    const groupWithId = {
+      ...group,
+      id: group._id
+    };
+
+    res.json({ group: groupWithId });
+
   } catch (error) {
     console.error('Get group by ID error:', error);
     res.status(500).json({
@@ -267,23 +184,13 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT /api/groups/:id - Update group
-router.put('/:id', authenticateToken, async (req, res) => {
+// GET /api/groups/:id/members - Get group members with roles
+router.get('/:id/members', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description } = req.body;
-    
-    const groupsData = await req.fileStorage.getGroups();
-    if (!groupsData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access group data'
-      });
-    }
+    const group = await req.mongodb.groups.findOne({ _id: id, isActive: true });
 
-    const groupIndex = groupsData.groups.findIndex(g => g.id === id && g.isActive);
-    if (groupIndex === -1) {
+    if (!group) {
       return res.status(404).json({
         success: false,
         error: 'GROUP_NOT_FOUND',
@@ -291,12 +198,72 @@ router.put('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    const group = groupsData.groups[groupIndex];
+    // Check if user has access to this group
+    const hasAccess = req.user.role === 'superAdmin' ||
+                     group.members.includes(req.user._id) ||
+                     group.admins.includes(req.user._id) ||
+                     group.createdBy === req.user._id;
 
-    // Check permissions - only creator, admins, or super admin can update
-    const canUpdate = req.user.role === 'superAdmin' || 
-                     group.createdBy === req.user.id || 
-                     group.admins.includes(req.user.id);
+    if (!hasAccess) {
+      return res.status(403).json({
+        success: false,
+        error: 'ACCESS_DENIED',
+        message: 'You do not have access to this group'
+      });
+    }
+
+    // Get all member user details
+    const allMemberIds = [...new Set([...group.members, ...group.admins])];
+    const users = await req.mongodb.users.find({
+      _id: { $in: allMemberIds },
+      isActive: true
+    }).toArray();
+
+    // Map users with their roles in the group and add id field for frontend compatibility
+    const membersWithRoles = users.map(user => {
+      const { password, ...userWithoutPassword } = user;
+      return {
+        ...userWithoutPassword,
+        id: user._id,
+        groupRole: group.createdBy === user._id ? 'creator' :
+                  group.admins.includes(user._id) ? 'admin' : 'member'
+      };
+    });
+
+    res.json({
+      members: membersWithRoles
+    });
+
+  } catch (error) {
+    console.error('Get group members error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to retrieve group members'
+    });
+  }
+});
+
+// PUT /api/groups/:id - Update group details
+router.put('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description } = req.body;
+
+    const group = await req.mongodb.groups.findOne({ _id: id, isActive: true });
+
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        error: 'GROUP_NOT_FOUND',
+        message: 'Group not found'
+      });
+    }
+
+    // Check if user can update this group (creator, admin, or super admin)
+    const canUpdate = req.user.role === 'superAdmin' ||
+                     group.createdBy === req.user._id ||
+                     group.admins.includes(req.user._id);
 
     if (!canUpdate) {
       return res.status(403).json({
@@ -306,12 +273,16 @@ router.put('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    // Update group fields
+    const updateData = {};
+
+    // Check if name already exists (exclude current group)
     if (name && name !== group.name) {
-      // Check if new name already exists
-      const existingGroup = groupsData.groups.find(g => 
-        g.name === name && g.isActive && g.id !== id
-      );
+      const existingGroup = await req.mongodb.groups.findOne({
+        name: name,
+        isActive: true,
+        _id: { $ne: id }
+      });
+
       if (existingGroup) {
         return res.status(409).json({
           success: false,
@@ -319,20 +290,34 @@ router.put('/:id', authenticateToken, async (req, res) => {
           message: 'Group name already exists'
         });
       }
-      group.name = name;
+      updateData.name = name;
     }
 
     if (description !== undefined) {
-      group.description = description;
+      updateData.description = description;
     }
 
-    groupsData.groups[groupIndex] = group;
-    await req.fileStorage.saveGroups(groupsData);
+    if (Object.keys(updateData).length > 0) {
+      await req.mongodb.groups.updateOne(
+        { _id: id },
+        { $set: updateData }
+      );
+    }
+
+    // Get updated group
+    const updatedGroup = await req.mongodb.groups.findOne({ _id: id });
+
+    // Transform _id to id for frontend compatibility
+    const groupWithId = {
+      ...updatedGroup,
+      id: updatedGroup._id
+    };
 
     res.json({
       success: true,
-      group: group
+      group: groupWithId
     });
+
   } catch (error) {
     console.error('Update group error:', error);
     res.status(500).json({
@@ -347,18 +332,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const groupsData = await req.fileStorage.getGroups();
-    if (!groupsData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access group data'
-      });
-    }
 
-    const groupIndex = groupsData.groups.findIndex(g => g.id === id && g.isActive);
-    if (groupIndex === -1) {
+    const group = await req.mongodb.groups.findOne({ _id: id, isActive: true });
+
+    if (!group) {
       return res.status(404).json({
         success: false,
         error: 'GROUP_NOT_FOUND',
@@ -366,44 +343,44 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    const group = groupsData.groups[groupIndex];
-
-    // Check permissions - only creator or super admin can delete
-    const canDelete = req.user.role === 'superAdmin' || group.createdBy === req.user.id;
+    // Only creator or super admin can delete group
+    const canDelete = req.user.role === 'superAdmin' || group.createdBy === req.user._id;
 
     if (!canDelete) {
       return res.status(403).json({
         success: false,
         error: 'INSUFFICIENT_PERMISSIONS',
-        message: 'You do not have permission to delete this group'
+        message: 'Only the group creator or super admin can delete this group'
       });
     }
 
     // Soft delete - mark as inactive
-    group.isActive = false;
-    groupsData.groups[groupIndex] = group;
-
-    // Also deactivate all channels in this group
-    const channelsData = await req.fileStorage.getChannels();
-    if (channelsData) {
-      let channelsUpdated = false;
-      channelsData.channels.forEach(channel => {
-        if (channel.groupId === id && channel.isActive) {
-          channel.isActive = false;
-          channelsUpdated = true;
-        }
-      });
-      if (channelsUpdated) {
-        await req.fileStorage.saveChannels(channelsData);
+    await req.mongodb.groups.updateOne(
+      { _id: id },
+      { 
+        $set: { 
+          isActive: false, 
+          deletedAt: new Date() 
+        } 
       }
-    }
-    
-    await req.fileStorage.saveGroups(groupsData);
+    );
+
+    // Also soft delete all channels in this group
+    await req.mongodb.channels.updateMany(
+      { groupId: id },
+      { 
+        $set: { 
+          isActive: false, 
+          deletedAt: new Date() 
+        } 
+      }
+    );
 
     res.json({
       success: true,
       message: 'Group deleted successfully'
     });
+
   } catch (error) {
     console.error('Delete group error:', error);
     res.status(500).json({
@@ -428,17 +405,9 @@ router.post('/:id/members', authenticateToken, async (req, res) => {
       });
     }
 
-    const groupsData = await req.fileStorage.getGroups();
-    if (!groupsData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access group data'
-      });
-    }
+    const group = await req.mongodb.groups.findOne({ _id: id, isActive: true });
 
-    const groupIndex = groupsData.groups.findIndex(g => g.id === id && g.isActive);
-    if (groupIndex === -1) {
+    if (!group) {
       return res.status(404).json({
         success: false,
         error: 'GROUP_NOT_FOUND',
@@ -446,12 +415,10 @@ router.post('/:id/members', authenticateToken, async (req, res) => {
       });
     }
 
-    const group = groupsData.groups[groupIndex];
-
-    // Check permissions - only admins, creator, or super admin can add members
-    const canAddMembers = req.user.role === 'superAdmin' || 
-                         group.createdBy === req.user.id || 
-                         group.admins.includes(req.user.id);
+    // Check if user can add members (admin, creator, or super admin)
+    const canAddMembers = req.user.role === 'superAdmin' ||
+                         group.createdBy === req.user._id ||
+                         group.admins.includes(req.user._id);
 
     if (!canAddMembers) {
       return res.status(403).json({
@@ -461,19 +428,9 @@ router.post('/:id/members', authenticateToken, async (req, res) => {
       });
     }
 
-    // Check if user is already a member
-    if (group.members.includes(userId) || group.admins.includes(userId)) {
-      return res.status(409).json({
-        success: false,
-        error: 'USER_ALREADY_MEMBER',
-        message: 'User is already a member of this group'
-      });
-    }
-
-    // Verify user exists
-    const usersData = await req.fileStorage.getUsers();
-    const userExists = usersData && usersData.users.find(u => u.id === userId && u.isActive);
-    if (!userExists) {
+    // Check if user exists
+    const userToAdd = await req.mongodb.users.findOne({ _id: userId, isActive: true });
+    if (!userToAdd) {
       return res.status(404).json({
         success: false,
         error: 'USER_NOT_FOUND',
@@ -481,21 +438,32 @@ router.post('/:id/members', authenticateToken, async (req, res) => {
       });
     }
 
-    // Add user to group
-    group.members.push(userId);
-    groupsData.groups[groupIndex] = group;
-    await req.fileStorage.saveGroups(groupsData);
+    // Check if user is already a member
+    if (group.members.includes(userId)) {
+      return res.status(409).json({
+        success: false,
+        error: 'USER_ALREADY_MEMBER',
+        message: 'User is already a member of this group'
+      });
+    }
+
+    // Add user to group members
+    await req.mongodb.groups.updateOne(
+      { _id: id },
+      { $push: { members: userId } }
+    );
 
     res.json({
       success: true,
       message: 'User added to group successfully'
     });
+
   } catch (error) {
-    console.error('Add member to group error:', error);
+    console.error('Add group member error:', error);
     res.status(500).json({
       success: false,
       error: 'INTERNAL_ERROR',
-      message: 'Failed to add member to group'
+      message: 'Failed to add user to group'
     });
   }
 });
@@ -505,17 +473,9 @@ router.delete('/:id/members/:userId', authenticateToken, async (req, res) => {
   try {
     const { id, userId } = req.params;
 
-    const groupsData = await req.fileStorage.getGroups();
-    if (!groupsData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access group data'
-      });
-    }
+    const group = await req.mongodb.groups.findOne({ _id: id, isActive: true });
 
-    const groupIndex = groupsData.groups.findIndex(g => g.id === id && g.isActive);
-    if (groupIndex === -1) {
+    if (!group) {
       return res.status(404).json({
         success: false,
         error: 'GROUP_NOT_FOUND',
@@ -523,24 +483,22 @@ router.delete('/:id/members/:userId', authenticateToken, async (req, res) => {
       });
     }
 
-    const group = groupsData.groups[groupIndex];
+    // Check permissions - admins, creator, super admin, or user removing themselves
+    const canRemove = req.user.role === 'superAdmin' ||
+                     group.createdBy === req.user._id ||
+                     group.admins.includes(req.user._id) ||
+                     req.user._id === userId;
 
-    // Check permissions - admins, creator, super admin, or the user themselves can remove
-    const canRemoveMembers = req.user.role === 'superAdmin' || 
-                            group.createdBy === req.user.id || 
-                            group.admins.includes(req.user.id) ||
-                            req.user.id === userId; // Users can remove themselves
-
-    if (!canRemoveMembers) {
+    if (!canRemove) {
       return res.status(403).json({
         success: false,
         error: 'INSUFFICIENT_PERMISSIONS',
-        message: 'You do not have permission to remove members from this group'
+        message: 'You do not have permission to remove this user from the group'
       });
     }
 
-    // Cannot remove the creator
-    if (userId === group.createdBy) {
+    // Cannot remove the group creator
+    if (group.createdBy === userId) {
       return res.status(400).json({
         success: false,
         error: 'CANNOT_REMOVE_CREATOR',
@@ -548,44 +506,47 @@ router.delete('/:id/members/:userId', authenticateToken, async (req, res) => {
       });
     }
 
-    // Remove user from members and admins
-    group.members = group.members.filter(memberId => memberId !== userId);
-    group.admins = group.admins.filter(adminId => adminId !== userId);
+    // Remove user from both members and admins arrays
+    await req.mongodb.groups.updateOne(
+      { _id: id },
+      { 
+        $pull: { 
+          members: userId,
+          admins: userId
+        } 
+      }
+    );
 
-    groupsData.groups[groupIndex] = group;
-    await req.fileStorage.saveGroups(groupsData);
+    // Remove user from all channels in this group
+    await req.mongodb.channels.updateMany(
+      { groupId: id },
+      { $pull: { members: userId } }
+    );
 
     res.json({
       success: true,
       message: 'User removed from group successfully'
     });
+
   } catch (error) {
-    console.error('Remove member from group error:', error);
+    console.error('Remove group member error:', error);
     res.status(500).json({
       success: false,
       error: 'INTERNAL_ERROR',
-      message: 'Failed to remove member from group'
+      message: 'Failed to remove user from group'
     });
   }
 });
 
-// POST /api/groups/:id/leave - Leave group (any member can leave)
+// POST /api/groups/:id/leave - Leave group
 router.post('/:id/leave', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user._id;
 
-    const groupsData = await req.fileStorage.getGroups();
-    if (!groupsData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access group data'
-      });
-    }
+    const group = await req.mongodb.groups.findOne({ _id: id, isActive: true });
 
-    const groupIndex = groupsData.groups.findIndex(g => g.id === id && g.isActive);
-    if (groupIndex === -1) {
+    if (!group) {
       return res.status(404).json({
         success: false,
         error: 'GROUP_NOT_FOUND',
@@ -593,14 +554,17 @@ router.post('/:id/leave', authenticateToken, async (req, res) => {
       });
     }
 
-    const group = groupsData.groups[groupIndex];
+    // Cannot leave if user is the group creator
+    if (group.createdBy === userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'CANNOT_LEAVE_OWN_GROUP',
+        message: 'Group creator cannot leave their own group'
+      });
+    }
 
-    // Check if user is a member of the group
-    const isMember = group.members.includes(userId) || 
-                    group.admins.includes(userId) || 
-                    group.createdBy === userId;
-
-    if (!isMember) {
+    // Check if user is actually a member
+    if (!group.members.includes(userId)) {
       return res.status(400).json({
         success: false,
         error: 'NOT_A_MEMBER',
@@ -608,73 +572,28 @@ router.post('/:id/leave', authenticateToken, async (req, res) => {
       });
     }
 
-    // Remove user from members array
-    groupsData.groups[groupIndex].members = group.members.filter(id => id !== userId);
-    
-    // Remove user from admins array if they're an admin
-    groupsData.groups[groupIndex].admins = group.admins.filter(id => id !== userId);
-
-    // If the creator is leaving, we need to handle group ownership
-    if (group.createdBy === userId) {
-      // Option 1: Transfer ownership to first admin, or first member, or delete group
-      if (group.admins.length > 0) {
-        // Transfer to first admin (excluding the leaving user)
-        const remainingAdmins = group.admins.filter(id => id !== userId);
-        if (remainingAdmins.length > 0) {
-          groupsData.groups[groupIndex].createdBy = remainingAdmins[0];
-        } else if (group.members.filter(id => id !== userId).length > 0) {
-          // Transfer to first remaining member and make them admin
-          const remainingMembers = group.members.filter(id => id !== userId);
-          groupsData.groups[groupIndex].createdBy = remainingMembers[0];
-          groupsData.groups[groupIndex].admins.push(remainingMembers[0]);
-        } else {
-          // No one left, deactivate the group
-          groupsData.groups[groupIndex].isActive = false;
-        }
-      } else if (group.members.filter(id => id !== userId).length > 0) {
-        // No admins, transfer to first remaining member and make them admin
-        const remainingMembers = group.members.filter(id => id !== userId);
-        groupsData.groups[groupIndex].createdBy = remainingMembers[0];
-        groupsData.groups[groupIndex].admins.push(remainingMembers[0]);
-      } else {
-        // No one left, deactivate the group
-        groupsData.groups[groupIndex].isActive = false;
+    // Remove user from group
+    await req.mongodb.groups.updateOne(
+      { _id: id },
+      { 
+        $pull: { 
+          members: userId,
+          admins: userId
+        } 
       }
-    }
+    );
 
-    // Also remove user from all channels in this group
-    const channelsData = await req.fileStorage.getChannels();
-    if (channelsData && channelsData.channels) {
-      let channelsModified = false;
-      
-      // Find all channels that belong to this group and remove the user
-      for (let i = 0; i < channelsData.channels.length; i++) {
-        const channel = channelsData.channels[i];
-        if (channel.groupId === id && channel.isActive) {
-          // Remove user from channel members
-          const originalMemberCount = channel.members.length;
-          channelsData.channels[i].members = channel.members.filter(memberId => memberId !== userId);
-          
-          if (channel.members.length !== originalMemberCount) {
-            channelsModified = true;
-          }
-        }
-      }
-      
-      // Save channels data if any modifications were made
-      if (channelsModified) {
-        channelsData.metadata.lastModified = new Date().toISOString();
-        await req.fileStorage.saveChannels(channelsData);
-      }
-    }
-
-    groupsData.metadata.lastModified = new Date().toISOString();
-    await req.fileStorage.saveGroups(groupsData);
+    // Remove user from all channels in this group
+    await req.mongodb.channels.updateMany(
+      { groupId: id },
+      { $pull: { members: userId } }
+    );
 
     res.json({
       success: true,
-      message: 'Successfully left the group and all its channels'
+      message: 'Left group successfully'
     });
+
   } catch (error) {
     console.error('Leave group error:', error);
     res.status(500).json({

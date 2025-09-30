@@ -14,18 +14,12 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Get users from storage
-    const usersData = await req.fileStorage.getUsers();
-    if (!usersData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access user data'
-      });
-    }
-
-    // Find user by username
-    const user = usersData.users.find(u => u.username === username && u.isActive);
+    // Find user by username in MongoDB
+    const user = await req.mongodb.users.findOne({
+      username: username,
+      password: password,
+      isActive: true
+    });
     
     if (!user || user.password !== password) {
       return res.status(401).json({
@@ -36,16 +30,22 @@ router.post('/login', async (req, res) => {
     }
 
     // Update last login time
-    user.lastLogin = new Date().toISOString();
-    await req.fileStorage.saveUsers(usersData);
+    await req.mongodb.users.updateOne(
+      { _id: user._id },
+      { $set: { lastLogin: new Date() } }
+    );
 
-    // Return user data (without password)
+    // Return user data (without password) and add id field for frontend compatibility
     const { password: _, ...userWithoutPassword } = user;
+    const userWithId = {
+      ...userWithoutPassword,
+      id: user._id
+    };
     
     res.json({
       success: true,
-      user: userWithoutPassword,
-      token: `session_${user.id}_${Date.now()}`, // Simple token for Phase 1
+      user: userWithId,
+      token: `session_${user._id}_${Date.now()}`, // Simple token for Phase 1
       message: 'Login successful'
     });
 
@@ -95,17 +95,11 @@ router.get('/current', async (req, res) => {
 
     const userId = tokenParts[1];
 
-    // Get user from storage
-    const usersData = await req.fileStorage.getUsers();
-    if (!usersData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access user data'
-      });
-    }
-
-    const user = usersData.users.find(u => u.id === userId && u.isActive);
+    // Get user from MongoDB
+    const user = await req.mongodb.users.findOne({
+      _id: userId,
+      isActive: true
+    });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -114,11 +108,15 @@ router.get('/current', async (req, res) => {
       });
     }
 
-    // Return user data (without password)
+    // Return user data (without password) and add id field for frontend compatibility
     const { password: _, ...userWithoutPassword } = user;
+    const userWithId = {
+      ...userWithoutPassword,
+      id: user._id
+    };
     
     res.json({
-      user: userWithoutPassword
+      user: userWithId
     });
 
   } catch (error) {

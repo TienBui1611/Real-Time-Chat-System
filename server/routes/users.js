@@ -5,19 +5,15 @@ const { authenticateToken, requireSuperAdmin, requireGroupAdmin } = require('../
 // GET /api/users - Get all users (Super Admin and Group Admin)
 router.get('/', authenticateToken, requireGroupAdmin, async (req, res) => {
   try {
-    const usersData = await req.fileStorage.getUsers();
-    if (!usersData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access user data'
-      });
-    }
-
-    // Remove passwords from response
-    const usersWithoutPasswords = usersData.users.map(user => {
+    const users = await req.mongodb.users.find({ isActive: true }).toArray();
+    
+    // Remove passwords from response and add id field for frontend compatibility
+    const usersWithoutPasswords = users.map(user => {
       const { password, ...userWithoutPassword } = user;
-      return userWithoutPassword;
+      return {
+        ...userWithoutPassword,
+        id: user._id
+      };
     });
 
     res.json({
@@ -46,19 +42,13 @@ router.post('/', authenticateToken, requireSuperAdmin, async (req, res) => {
       });
     }
 
-    const usersData = await req.fileStorage.getUsers();
-    if (!usersData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access user data'
-      });
-    }
-
     // Check if username or email already exists
-    const existingUser = usersData.users.find(u => 
-      u.username === username || u.email === email
-    );
+    const existingUser = await req.mongodb.users.findOne({
+      $or: [
+        { username: username },
+        { email: email }
+      ]
+    });
 
     if (existingUser) {
       return res.status(409).json({
@@ -70,29 +60,29 @@ router.post('/', authenticateToken, requireSuperAdmin, async (req, res) => {
 
     // Create new user
     const newUser = {
-      id: req.fileStorage.generateId('user'),
+      _id: req.mongodb.generateId('user'),
       username,
       email,
       password, // Plain text for Phase 1
-      role,  // Changed from roles array to single role
+      role,
       groups: [],
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
       lastLogin: null,
       isActive: true
     };
 
-    usersData.users.push(newUser);
-    usersData.metadata.totalUsers = usersData.users.length;
-    usersData.metadata.nextId = req.fileStorage.generateId('user');
+    await req.mongodb.users.insertOne(newUser);
 
-    await req.fileStorage.saveUsers(usersData);
-
-    // Return user without password
+    // Return user without password and add id field for frontend compatibility
     const { password: _, ...userWithoutPassword } = newUser;
+    const userWithId = {
+      ...userWithoutPassword,
+      id: newUser._id
+    };
     
     res.status(201).json({
       success: true,
-      user: userWithoutPassword
+      user: userWithId
     });
 
   } catch (error) {
@@ -109,17 +99,8 @@ router.post('/', authenticateToken, requireSuperAdmin, async (req, res) => {
 router.get('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const usersData = await req.fileStorage.getUsers();
+    const user = await req.mongodb.users.findOne({ _id: id });
     
-    if (!usersData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access user data'
-      });
-    }
-
-    const user = usersData.users.find(u => u.id === id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -128,9 +109,13 @@ router.get('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
       });
     }
 
-    // Return user without password
+    // Return user without password and add id field for frontend compatibility
     const { password: _, ...userWithoutPassword } = user;
-    res.json({ user: userWithoutPassword });
+    const userWithId = {
+      ...userWithoutPassword,
+      id: user._id
+    };
+    res.json({ user: userWithId });
 
   } catch (error) {
     console.error('Get user by ID error:', error);
@@ -148,17 +133,8 @@ router.put('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
     const { id } = req.params;
     const { username, email, role } = req.body;
     
-    const usersData = await req.fileStorage.getUsers();
-    if (!usersData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access user data'
-      });
-    }
-
-    const userIndex = usersData.users.findIndex(u => u.id === id);
-    if (userIndex === -1) {
+    const user = await req.mongodb.users.findOne({ _id: id });
+    if (!user) {
       return res.status(404).json({
         success: false,
         error: 'USER_NOT_FOUND',
@@ -166,11 +142,14 @@ router.put('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
       });
     }
 
-    const user = usersData.users[userIndex];
+    const updateData = {};
 
-    // Check if username or email already exists (exclude current user)
+    // Check if username already exists (exclude current user)
     if (username && username !== user.username) {
-      const existingUser = usersData.users.find(u => u.username === username && u.id !== id);
+      const existingUser = await req.mongodb.users.findOne({ 
+        username: username, 
+        _id: { $ne: id } 
+      });
       if (existingUser) {
         return res.status(409).json({
           success: false,
@@ -178,11 +157,15 @@ router.put('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
           message: 'Username already exists'
         });
       }
-      user.username = username;
+      updateData.username = username;
     }
 
+    // Check if email already exists (exclude current user)
     if (email && email !== user.email) {
-      const existingUser = usersData.users.find(u => u.email === email && u.id !== id);
+      const existingUser = await req.mongodb.users.findOne({ 
+        email: email, 
+        _id: { $ne: id } 
+      });
       if (existingUser) {
         return res.status(409).json({
           success: false,
@@ -190,21 +173,31 @@ router.put('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
           message: 'Email already exists'
         });
       }
-      user.email = email;
+      updateData.email = email;
     }
 
     if (role && typeof role === 'string') {
-      user.role = role;
+      updateData.role = role;
     }
 
-    usersData.users[userIndex] = user;
-    await req.fileStorage.saveUsers(usersData);
+    if (Object.keys(updateData).length > 0) {
+      await req.mongodb.users.updateOne(
+        { _id: id },
+        { $set: updateData }
+      );
+    }
 
-    // Return user without password
-    const { password: _, ...userWithoutPassword } = user;
+    // Get updated user
+    const updatedUser = await req.mongodb.users.findOne({ _id: id });
+    const { password: _, ...userWithoutPassword } = updatedUser;
+    const userWithId = {
+      ...userWithoutPassword,
+      id: updatedUser._id
+    };
+    
     res.json({
       success: true,
-      user: userWithoutPassword
+      user: userWithId
     });
 
   } catch (error) {
@@ -223,7 +216,7 @@ router.delete('/:id', authenticateToken, requireSuperAdmin, async (req, res) => 
     const { id } = req.params;
     
     // Prevent users from deleting themselves
-    if (req.user.id === id) {
+    if (req.user._id === id) {
       return res.status(400).json({
         success: false,
         error: 'CANNOT_DELETE_SELF',
@@ -231,17 +224,8 @@ router.delete('/:id', authenticateToken, requireSuperAdmin, async (req, res) => 
       });
     }
 
-    const usersData = await req.fileStorage.getUsers();
-    if (!usersData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access user data'
-      });
-    }
-
-    const userIndex = usersData.users.findIndex(u => u.id === id);
-    if (userIndex === -1) {
+    const user = await req.mongodb.users.findOne({ _id: id });
+    if (!user) {
       return res.status(404).json({
         success: false,
         error: 'USER_NOT_FOUND',
@@ -249,13 +233,18 @@ router.delete('/:id', authenticateToken, requireSuperAdmin, async (req, res) => 
       });
     }
 
-    // Remove user from users array
-    usersData.users.splice(userIndex, 1);
-    usersData.metadata.totalUsers = usersData.users.length;
+    // Soft delete - mark as inactive
+    await req.mongodb.users.updateOne(
+      { _id: id },
+      { 
+        $set: { 
+          isActive: false, 
+          deletedAt: new Date() 
+        } 
+      }
+    );
 
     // TODO: Remove user from all groups and channels they belong to
-
-    await req.fileStorage.saveUsers(usersData);
 
     res.json({
       success: true,
@@ -295,17 +284,8 @@ router.put('/:id/promote', authenticateToken, requireSuperAdmin, async (req, res
       });
     }
 
-    const usersData = await req.fileStorage.getUsers();
-    if (!usersData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access user data'
-      });
-    }
-
-    const userIndex = usersData.users.findIndex(u => u.id === id);
-    if (userIndex === -1) {
+    const user = await req.mongodb.users.findOne({ _id: id });
+    if (!user) {
       return res.status(404).json({
         success: false,
         error: 'USER_NOT_FOUND',
@@ -313,14 +293,22 @@ router.put('/:id/promote', authenticateToken, requireSuperAdmin, async (req, res
       });
     }
 
-    usersData.users[userIndex].role = role;
-    await req.fileStorage.saveUsers(usersData);
+    await req.mongodb.users.updateOne(
+      { _id: id },
+      { $set: { role: role } }
+    );
 
-    // Return user without password
-    const { password: _, ...userWithoutPassword } = usersData.users[userIndex];
+    // Get updated user
+    const updatedUser = await req.mongodb.users.findOne({ _id: id });
+    const { password: _, ...userWithoutPassword } = updatedUser;
+    const userWithId = {
+      ...userWithoutPassword,
+      id: updatedUser._id
+    };
+    
     res.json({
       success: true,
-      user: userWithoutPassword
+      user: userWithId
     });
 
   } catch (error) {
@@ -346,17 +334,8 @@ router.post('/validate-username', authenticateToken, requireSuperAdmin, async (r
       });
     }
 
-    const usersData = await req.fileStorage.getUsers();
-    if (!usersData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access user data'
-      });
-    }
-
-    const exists = usersData.users.some(u => u.username === username);
-    res.json({ available: !exists });
+    const existingUser = await req.mongodb.users.findOne({ username: username });
+    res.json({ available: !existingUser });
 
   } catch (error) {
     console.error('Validate username error:', error);
@@ -381,17 +360,8 @@ router.post('/validate-email', authenticateToken, requireSuperAdmin, async (req,
       });
     }
 
-    const usersData = await req.fileStorage.getUsers();
-    if (!usersData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access user data'
-      });
-    }
-
-    const exists = usersData.users.some(u => u.email === email);
-    res.json({ available: !exists });
+    const existingUser = await req.mongodb.users.findOne({ email: email });
+    res.json({ available: !existingUser });
 
   } catch (error) {
     console.error('Validate email error:', error);
@@ -416,26 +386,27 @@ router.get('/search', authenticateToken, requireSuperAdmin, async (req, res) => 
       });
     }
 
-    const usersData = await req.fileStorage.getUsers();
-    if (!usersData) {
-      return res.status(500).json({
-        success: false,
-        error: 'STORAGE_ERROR',
-        message: 'Failed to access user data'
-      });
-    }
-
     const query = q.toLowerCase();
-    const filteredUsers = usersData.users.filter(user =>
-      user.username.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query) ||
-      user.role.toLowerCase().includes(query)
-    );
+    const users = await req.mongodb.users.find({
+      $and: [
+        { isActive: true },
+        {
+          $or: [
+            { username: { $regex: query, $options: 'i' } },
+            { email: { $regex: query, $options: 'i' } },
+            { role: { $regex: query, $options: 'i' } }
+          ]
+        }
+      ]
+    }).toArray();
 
-    // Remove passwords from response
-    const usersWithoutPasswords = filteredUsers.map(user => {
+    // Remove passwords from response and add id field for frontend compatibility
+    const usersWithoutPasswords = users.map(user => {
       const { password, ...userWithoutPassword } = user;
-      return userWithoutPassword;
+      return {
+        ...userWithoutPassword,
+        id: user._id
+      };
     });
 
     res.json({ users: usersWithoutPasswords });
