@@ -306,8 +306,8 @@ export class ChannelListComponent implements OnInit {
   }
 
   navigateToChannel(channelId: string): void {
-    // TODO: Navigate to channel detail/chat view when implemented
-    console.log('Navigate to channel:', channelId);
+    // Navigate to the chat room for this channel
+    this.router.navigate(['/chat', channelId]);
   }
 
   navigateBackToGroups(): void {

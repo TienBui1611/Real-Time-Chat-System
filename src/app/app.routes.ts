@@ -34,6 +34,11 @@ export const routes: Routes = [
     loadComponent: () => import('./components/channels/channel-list/channel-list.component').then(m => m.ChannelListComponent),
     canActivate: [AuthGuard]
   },
+  {
+    path: 'chat/:channelId',
+    loadComponent: () => import('./components/chat/chat-room/chat-room.component').then(m => m.ChatRoomComponent),
+    canActivate: [AuthGuard]
+  },
   // Catch-all route - redirect to login
   { path: '**', redirectTo: '/login' }
 ];

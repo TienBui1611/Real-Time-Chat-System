@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
 
 // Import services
 const MongoDBService = require('./services/mongodb');
@@ -12,9 +14,19 @@ const userRoutes = require('./routes/users');
 const groupRoutes = require('./routes/groups');
 const channelRoutes = require('./routes/channels');
 
-// Initialize Express app
+// Initialize Express app and HTTP server
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
+
+// Initialize Socket.io with CORS configuration
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:4200",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
 
 // Initialize MongoDB service
 const mongodb = new MongoDBService();
@@ -30,6 +42,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Make MongoDB service available to all routes
 app.use((req, res, next) => {
   req.mongodb = mongodb;
+  req.io = io; // Make Socket.io available to routes
   // Keep fileStorage for backward compatibility during transition
   req.fileStorage = mongodb;
   next();
@@ -76,6 +89,109 @@ app.use('*', (req, res) => {
   });
 });
 
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log(`🔌 User connected: ${socket.id}`);
+
+  // Join a channel room
+  socket.on('join-channel', async (data) => {
+    try {
+      const { channelId, userId, username } = data;
+      console.log(`👤 ${username} joining channel: ${channelId}`);
+      
+      // Join the channel room
+      socket.join(channelId);
+      
+      // Load and send message history (last 50 messages)
+      const messages = await mongodb.messages.find({ channelId })
+        .sort({ timestamp: -1 })
+        .limit(50)
+        .toArray();
+      
+      // Send history in chronological order
+      socket.emit('channel-history', messages.reverse());
+      
+      // Notify others in the channel
+      socket.to(channelId).emit('user-joined', {
+        username,
+        message: `${username} joined the channel`,
+        timestamp: new Date()
+      });
+      
+    } catch (error) {
+      console.error('Join channel error:', error);
+      socket.emit('error', { message: 'Failed to join channel' });
+    }
+  });
+
+  // Leave a channel room
+  socket.on('leave-channel', (data) => {
+    const { channelId, username } = data;
+    console.log(`👤 ${username} leaving channel: ${channelId}`);
+    
+    socket.leave(channelId);
+    
+    // Notify others in the channel
+    socket.to(channelId).emit('user-left', {
+      username,
+      message: `${username} left the channel`,
+      timestamp: new Date()
+    });
+  });
+
+  // Handle sending messages
+  socket.on('send-message', async (data) => {
+    try {
+      const { channelId, userId, username, content, type = 'text' } = data;
+      
+      // Create message object
+      const message = {
+        _id: mongodb.generateId('msg'),
+        channelId,
+        userId,
+        username,
+        content,
+        type,
+        timestamp: new Date()
+      };
+      
+      // Save message to MongoDB
+      await mongodb.messages.insertOne(message);
+      
+      // Add id field for frontend compatibility
+      const messageWithId = {
+        ...message,
+        id: message._id
+      };
+      
+      // Broadcast message to all users in the channel
+      io.to(channelId).emit('message', messageWithId);
+      
+      console.log(`💬 Message from ${username} in ${channelId}: ${content}`);
+      
+    } catch (error) {
+      console.error('Send message error:', error);
+      socket.emit('error', { message: 'Failed to send message' });
+    }
+  });
+
+  // Handle typing indicators (optional feature)
+  socket.on('typing', (data) => {
+    const { channelId, username } = data;
+    socket.to(channelId).emit('user-typing', { username });
+  });
+
+  socket.on('stop-typing', (data) => {
+    const { channelId, username } = data;
+    socket.to(channelId).emit('user-stop-typing', { username });
+  });
+
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    console.log(`🔌 User disconnected: ${socket.id}`);
+  });
+});
+
 // Start server with MongoDB connection
 async function startServer() {
   try {
@@ -83,12 +199,13 @@ async function startServer() {
     await mongodb.connect();
     console.log('✅ MongoDB connected successfully');
 
-    // Start Express server
-    app.listen(PORT, () => {
+    // Start HTTP server (with Socket.io)
+    server.listen(PORT, () => {
       console.log(`🚀 Chat System Server running on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
       console.log(`🌐 CORS enabled for: http://localhost:4200`);
       console.log(`🗄️  Database: MongoDB (chatApp)`);
+      console.log(`🔌 Socket.io enabled for real-time chat`);
     });
 
   } catch (error) {

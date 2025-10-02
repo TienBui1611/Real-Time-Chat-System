@@ -1,5 +1,6 @@
 export interface User {
   id: string;
+  _id?: string;  // MongoDB compatibility
   username: string;
   email: string;
   role: UserRole;  // Changed from roles array to single role

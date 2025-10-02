@@ -1,0 +1,98 @@
+<div class="chat-room-container">
+  <!-- Header -->
+  <div class="chat-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center">
+        <button class="btn btn-outline-secondary btn-sm me-3" (click)="goBack()">
+          <i class="bi bi-arrow-left"></i> Back
+        </button>
+        <div>
+          <h4 class="mb-0" *ngIf="channel"># {{ channel.name }}</h4>
+          <small class="text-muted" *ngIf="channel">{{ channel.description }}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="text-center p-4">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2">Loading chat room...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error" class="alert alert-danger" role="alert">
+    <i class="bi bi-exclamation-triangle"></i>
+    {{ error }}
+  </div>
+
+  <!-- Chat Messages -->
+  <div *ngIf="!isLoading && !error" class="chat-content">
+    <div class="messages-container" #messagesContainer>
+      <!-- No messages -->
+      <div *ngIf="messages.length === 0" class="no-messages text-center text-muted p-4">
+        <i class="bi bi-chat-dots fs-1"></i>
+        <p class="mt-2">No messages yet. Start the conversation!</p>
+      </div>
+
+      <!-- Messages -->
+      <div *ngFor="let message of messages" class="message-wrapper">
+        <div class="message" [class.my-message]="isMyMessage(message)" [class.other-message]="!isMyMessage(message)">
+          <div class="message-header">
+            <strong class="username">{{ message.username }}</strong>
+            <small class="timestamp text-muted">{{ formatTimestamp(message.timestamp) }}</small>
+          </div>
+          <div class="message-content">
+            <div *ngIf="message.type === 'text'" class="text-message">
+              {{ message.content }}
+            </div>
+            <div *ngIf="message.type === 'image'" class="image-message">
+              <img [src]="message.content" alt="Shared image" class="chat-image">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Typing Indicator -->
+      <div *ngIf="typingUsers.length > 0" class="typing-indicator">
+        <div class="typing-message">
+          <div class="typing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <small class="text-muted">{{ getTypingText() }}</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message Input -->
+    <div class="message-input-container">
+      <div class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Type your message..."
+          [(ngModel)]="newMessage"
+          (keypress)="onKeyPress($event)"
+          (input)="onTyping()"
+          [disabled]="!isConnected"
+          #messageInput>
+        <button
+          class="btn btn-primary"
+          type="button"
+          (click)="sendMessage()"
+          [disabled]="!newMessage.trim() || !isConnected">
+          <i class="bi bi-send"></i>
+        </button>
+      </div>
+      <div *ngIf="!isConnected" class="text-danger small mt-1">
+        <i class="bi bi-exclamation-triangle"></i>
+        Connection lost. Trying to reconnect...
+      </div>
+    </div>
+  </div>
+</div>
+
