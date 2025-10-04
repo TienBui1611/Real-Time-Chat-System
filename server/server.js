@@ -99,8 +99,30 @@ io.on('connection', (socket) => {
       const { channelId, userId, username } = data;
       console.log(`👤 ${username} joining channel: ${channelId}`);
       
+      // Check if user is a member of this channel
+      const channel = await mongodb.channels.findOne({ 
+        _id: channelId, 
+        isActive: true 
+      });
+      
+      if (!channel) {
+        socket.emit('error', { message: 'Channel not found' });
+        return;
+      }
+      
+      // Check if user is a member of the channel
+      if (!channel.members.includes(userId)) {
+        socket.emit('error', { message: 'You are not a member of this channel. Please join the channel first.' });
+        return;
+      }
+      
       // Join the channel room
       socket.join(channelId);
+      
+      // Store channel and user info in socket for later use
+      socket.channelId = channelId;
+      socket.userId = userId;
+      socket.username = username;
       
       // Load and send message history (last 50 messages)
       const messages = await mongodb.messages.find({ channelId })
@@ -108,15 +130,18 @@ io.on('connection', (socket) => {
         .limit(50)
         .toArray();
       
-      // Send history in chronological order
-      socket.emit('channel-history', messages.reverse());
+      // Send history in chronological order with id compatibility
+      const messagesWithId = messages.reverse().map(msg => ({
+        ...msg,
+        id: msg._id
+      }));
       
-      // Notify others in the channel
-      socket.to(channelId).emit('user-joined', {
-        username,
-        message: `${username} joined the channel`,
-        timestamp: new Date()
-      });
+      socket.emit('channel-history', messagesWithId);
+      
+      // Don't send notifications for chat room entry - only for channel membership changes
+      // Notifications are handled by channel routes when users actually join/leave channels
+      
+      console.log(`✅ ${username} successfully joined chat room: ${channelId}`);
       
     } catch (error) {
       console.error('Join channel error:', error);
@@ -127,22 +152,36 @@ io.on('connection', (socket) => {
   // Leave a channel room
   socket.on('leave-channel', (data) => {
     const { channelId, username } = data;
-    console.log(`👤 ${username} leaving channel: ${channelId}`);
+    console.log(`👤 ${username} leaving chat room: ${channelId}`);
     
     socket.leave(channelId);
     
-    // Notify others in the channel
-    socket.to(channelId).emit('user-left', {
-      username,
-      message: `${username} left the channel`,
-      timestamp: new Date()
-    });
+    // Don't send notifications for chat room exit - only for channel membership changes
+    // Notifications are handled by channel routes when users actually join/leave channels
   });
 
   // Handle sending messages
   socket.on('send-message', async (data) => {
     try {
       const { channelId, userId, username, content, type = 'text' } = data;
+      
+      // Verify user is still in the socket room and is a channel member
+      if (!socket.rooms.has(channelId)) {
+        socket.emit('error', { message: 'You must join the channel first to send messages' });
+        return;
+      }
+      
+      // Double-check channel membership in database
+      const channel = await mongodb.channels.findOne({ 
+        _id: channelId, 
+        isActive: true,
+        members: userId 
+      });
+      
+      if (!channel) {
+        socket.emit('error', { message: 'You are not a member of this channel' });
+        return;
+      }
       
       // Create message object
       const message = {
@@ -189,6 +228,11 @@ io.on('connection', (socket) => {
   // Handle disconnection
   socket.on('disconnect', () => {
     console.log(`🔌 User disconnected: ${socket.id}`);
+    
+    // Don't send notifications for disconnection - only for actual channel membership changes
+    if (socket.channelId && socket.username) {
+      console.log(`👤 ${socket.username} disconnected from chat room: ${socket.channelId}`);
+    }
   });
 });
 

@@ -439,6 +439,17 @@ router.post('/:id/join', authenticateToken, async (req, res) => {
       { $push: { members: userId } }
     );
 
+    // Emit Socket.io event to notify users in the channel about membership change
+    if (req.io) {
+      req.io.to(id).emit('channel-member-joined', {
+        channelId: id,
+        userId: userId,
+        username: req.user.username,
+        message: `${req.user.username} joined the channel`,
+        timestamp: new Date()
+      });
+    }
+
     res.json({
       success: true,
       message: 'Joined channel successfully'
@@ -493,6 +504,17 @@ router.post('/:id/leave', authenticateToken, async (req, res) => {
       { _id: id },
       { $pull: { members: userId } }
     );
+
+    // Emit Socket.io event to notify users in the channel about membership change
+    if (req.io) {
+      req.io.to(id).emit('channel-member-left', {
+        channelId: id,
+        userId: userId,
+        username: req.user.username,
+        message: `${req.user.username} left the channel`,
+        timestamp: new Date()
+      });
+    }
 
     res.json({
       success: true,
@@ -588,6 +610,17 @@ router.post('/:id/members', authenticateToken, async (req, res) => {
       { $push: { members: userId } }
     );
 
+    // Emit Socket.io event to notify users in the channel
+    if (req.io) {
+      req.io.to(id).emit('channel-member-joined', {
+        channelId: id,
+        userId: userId,
+        username: userToAdd.username,
+        message: `${userToAdd.username} was added to the channel`,
+        timestamp: new Date()
+      });
+    }
+
     res.json({
       success: true,
       message: 'User added to channel successfully'
@@ -650,11 +683,25 @@ router.delete('/:id/members/:userId', authenticateToken, async (req, res) => {
       });
     }
 
+    // Get user info for notification
+    const userToRemove = await req.mongodb.users.findOne({ _id: userId, isActive: true });
+
     // Remove user from channel members
     await req.mongodb.channels.updateOne(
       { _id: id },
       { $pull: { members: userId } }
     );
+
+    // Emit Socket.io event to notify users in the channel
+    if (req.io && userToRemove) {
+      req.io.to(id).emit('channel-member-left', {
+        channelId: id,
+        userId: userId,
+        username: userToRemove.username,
+        message: `${userToRemove.username} was removed from the channel`,
+        timestamp: new Date()
+      });
+    }
 
     res.json({
       success: true,

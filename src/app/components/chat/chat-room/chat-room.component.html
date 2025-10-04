@@ -28,11 +28,18 @@
     {{ error }}
   </div>
 
+  <!-- Socket Error -->
+  <div *ngIf="socketError" class="alert alert-warning alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle"></i>
+    {{ socketError }}
+    <button type="button" class="btn-close" (click)="clearSocketError()" aria-label="Close"></button>
+  </div>
+
   <!-- Chat Messages -->
   <div *ngIf="!isLoading && !error" class="chat-content">
     <div class="messages-container" #messagesContainer>
       <!-- No messages -->
-      <div *ngIf="messages.length === 0" class="no-messages text-center text-muted p-4">
+      <div *ngIf="messages.length === 0 && systemNotifications.length === 0" class="no-messages text-center text-muted p-4">
         <i class="bi bi-chat-dots fs-1"></i>
         <p class="mt-2">No messages yet. Start the conversation!</p>
       </div>
@@ -52,6 +59,15 @@
               <img [src]="message.content" alt="Shared image" class="chat-image">
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- System Notifications -->
+      <div *ngFor="let notification of systemNotifications" class="system-notification">
+        <div class="notification-content">
+          <i class="bi bi-info-circle me-2"></i>
+          <span>{{ notification.message }}</span>
+          <small class="timestamp text-muted ms-2">{{ formatTimestamp(notification.timestamp) }}</small>
         </div>
       </div>
 

@@ -34,6 +34,7 @@ export class SocketService {
   private userLeftSubject = new BehaviorSubject<UserNotification | null>(null);
   private typingUsersSubject = new BehaviorSubject<string[]>([]);
   private connectionStatusSubject = new BehaviorSubject<boolean>(false);
+  private errorSubject = new BehaviorSubject<string | null>(null);
 
   // Public observables
   public messages$ = this.messagesSubject.asObservable();
@@ -42,6 +43,7 @@ export class SocketService {
   public userLeft$ = this.userLeftSubject.asObservable();
   public typingUsers$ = this.typingUsersSubject.asObservable();
   public connectionStatus$ = this.connectionStatusSubject.asObservable();
+  public error$ = this.errorSubject.asObservable();
 
   private currentChannelId: string | null = null;
   private typingUsers: string[] = [];
@@ -242,15 +244,14 @@ export class SocketService {
       this.newMessageSubject.next(message);
     });
 
-    // User joined notification
-    this.socket.on('user-joined', (notification: UserNotification) => {
-      console.log('User joined:', notification);
+    // Channel membership changes (only these should show notifications)
+    this.socket.on('channel-member-joined', (notification: UserNotification) => {
+      console.log('User joined channel:', notification);
       this.userJoinedSubject.next(notification);
     });
 
-    // User left notification
-    this.socket.on('user-left', (notification: UserNotification) => {
-      console.log('User left:', notification);
+    this.socket.on('channel-member-left', (notification: UserNotification) => {
+      console.log('User left channel:', notification);
       this.userLeftSubject.next(notification);
     });
 
@@ -270,7 +271,15 @@ export class SocketService {
     // Error handling
     this.socket.on('error', (error: any) => {
       console.error('Socket error:', error);
+      this.errorSubject.next(error.message || 'An error occurred');
     });
+  }
+
+  /**
+   * Clear error message
+   */
+  clearError(): void {
+    this.errorSubject.next(null);
   }
 }
 

@@ -100,6 +100,36 @@
   transform: scale(1.05);
 }
 
+.system-notification {
+  margin: 0.5rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+.notification-content {
+  background: #e3f2fd;
+  border: 1px solid #bbdefb;
+  border-radius: 15px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  color: #1565c0;
+  display: flex;
+  align-items: center;
+  max-width: 80%;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .typing-indicator {
   margin-top: 1rem;
 }

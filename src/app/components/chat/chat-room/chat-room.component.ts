@@ -21,12 +21,14 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   channel: Channel | null = null;
   messages: ChatMessage[] = [];
+  systemNotifications: UserNotification[] = [];
   newMessage: string = '';
   currentUser: User | null = null;
   isConnected: boolean = false;
   typingUsers: string[] = [];
   isLoading: boolean = true;
   error: string = '';
+  socketError: string = '';
 
   private subscriptions: Subscription[] = [];
   private typingTimer: any;
@@ -71,6 +73,9 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (this.typingTimer) {
       clearTimeout(this.typingTimer);
     }
+    
+    // Clear system notifications
+    this.systemNotifications = [];
   }
 
   ngAfterViewChecked(): void {
@@ -142,6 +147,14 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.socketService.userJoined$.subscribe(notification => {
         if (notification) {
           console.log(notification.message);
+          // Add to system notifications for display
+          this.systemNotifications.push(notification);
+          this.shouldScrollToBottom = true;
+          
+          // Remove notification after 5 seconds
+          setTimeout(() => {
+            this.systemNotifications = this.systemNotifications.filter(n => n !== notification);
+          }, 5000);
         }
       })
     );
@@ -150,6 +163,14 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.socketService.userLeft$.subscribe(notification => {
         if (notification) {
           console.log(notification.message);
+          // Add to system notifications for display
+          this.systemNotifications.push(notification);
+          this.shouldScrollToBottom = true;
+          
+          // Remove notification after 5 seconds
+          setTimeout(() => {
+            this.systemNotifications = this.systemNotifications.filter(n => n !== notification);
+          }, 5000);
         }
       })
     );
@@ -158,6 +179,13 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.subscriptions.push(
       this.socketService.typingUsers$.subscribe(users => {
         this.typingUsers = users.filter(user => user !== this.currentUser?.username);
+      })
+    );
+
+    // Socket errors
+    this.subscriptions.push(
+      this.socketService.error$.subscribe(error => {
+        this.socketError = error || '';
       })
     );
   }
@@ -253,6 +281,14 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
    */
   goBack(): void {
     this.router.navigate(['/channels', this.channel?.groupId]);
+  }
+
+  /**
+   * Clear socket error
+   */
+  clearSocketError(): void {
+    this.socketError = '';
+    this.socketService.clearError();
   }
 
   /**
