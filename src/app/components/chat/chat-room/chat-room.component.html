@@ -56,7 +56,7 @@
               {{ message.content }}
             </div>
             <div *ngIf="message.type === 'image'" class="image-message">
-              <img [src]="message.content" alt="Shared image" class="chat-image">
+              <img [src]="getImageUrl(message.content)" alt="Shared image" class="chat-image" (click)="openImageModal(message.content)">
             </div>
           </div>
         </div>
@@ -87,6 +87,17 @@
     <!-- Message Input -->
     <div class="message-input-container">
       <div class="input-group">
+        <!-- Image Upload Button -->
+        <app-image-upload
+          uploadType="chat-image"
+          [channelId]="channel?.id || channel?._id"
+          buttonText="📷"
+          buttonClass="btn btn-outline-secondary"
+          [disabled]="!isConnected"
+          (uploadSuccess)="onImageUploadSuccess($event)"
+          (uploadError)="onImageUploadError($event)">
+        </app-image-upload>
+
         <input
           type="text"
           class="form-control"

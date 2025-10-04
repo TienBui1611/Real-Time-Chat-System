@@ -1,5 +1,6 @@
 export interface Channel {
   id: string;
+  _id?: string;  // MongoDB compatibility
   name: string;
   description: string;
   groupId: string;

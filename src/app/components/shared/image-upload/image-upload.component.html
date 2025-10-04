@@ -1,0 +1,31 @@
+<div class="image-upload-container">
+  <!-- Hidden file input -->
+  <input
+    #fileInput
+    type="file"
+    [accept]="acceptedTypes"
+    (change)="onFileSelected($event)"
+    style="display: none">
+
+  <!-- Upload button/area -->
+  <div class="upload-area" 
+       [class.uploading]="isUploading"
+       [class.disabled]="disabled"
+       (click)="triggerFileInput()">
+
+    <!-- Chat image upload style -->
+    <div class="chat-image-upload">
+      <div class="upload-button" [class.disabled]="disabled || isUploading">
+        <i class="bi bi-image me-2"></i>
+        <span *ngIf="!isUploading">{{ buttonText }}</span>
+        <span *ngIf="isUploading">Uploading... {{ uploadProgressValue }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error message -->
+  <div *ngIf="error" class="alert alert-danger mt-2" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ error }}
+  </div>
+</div>

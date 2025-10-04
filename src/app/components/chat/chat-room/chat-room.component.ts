@@ -6,12 +6,14 @@ import { Subscription } from 'rxjs';
 import { SocketService, ChatMessage, UserNotification } from '../../../services/socket.service';
 import { ChannelService } from '../../../services/channel.service';
 import { AuthService } from '../../../services/auth.service';
+import { FileUploadService, UploadResponse } from '../../../services/file-upload.service';
 import { Channel, User } from '../../../models';
+import { ImageUploadComponent } from '../../shared/image-upload/image-upload.component';
 
 @Component({
   selector: 'app-chat-room',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImageUploadComponent],
   templateUrl: './chat-room.component.html',
   styleUrls: ['./chat-room.component.css']
 })
@@ -39,7 +41,8 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
     private router: Router,
     private socketService: SocketService,
     private channelService: ChannelService,
-    private authService: AuthService
+    private authService: AuthService,
+    private fileUploadService: FileUploadService
   ) {}
 
   ngOnInit(): void {
@@ -289,6 +292,40 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
   clearSocketError(): void {
     this.socketError = '';
     this.socketService.clearError();
+  }
+
+  /**
+   * Handle image upload success
+   */
+  onImageUploadSuccess(response: UploadResponse): void {
+    if (response.success && response.imageMessage) {
+      console.log('Image uploaded successfully:', response);
+      // Message will be received via Socket.io and displayed automatically
+    }
+  }
+
+  /**
+   * Handle image upload error
+   */
+  onImageUploadError(error: string): void {
+    console.error('Image upload error:', error);
+    // You could show a toast notification here
+  }
+
+  /**
+   * Get image URL for display
+   */
+  getImageUrl(imagePath: string): string {
+    return this.fileUploadService.getChatImageUrl(imagePath);
+  }
+
+  /**
+   * Open image in modal (placeholder for future enhancement)
+   */
+  openImageModal(imagePath: string): void {
+    // For now, just open in new tab
+    const imageUrl = this.getImageUrl(imagePath);
+    window.open(imageUrl, '_blank');
   }
 
   /**

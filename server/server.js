@@ -13,6 +13,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const groupRoutes = require('./routes/groups');
 const channelRoutes = require('./routes/channels');
+const uploadRoutes = require('./routes/upload');
 
 // Initialize Express app and HTTP server
 const app = express();
@@ -39,6 +40,9 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Make MongoDB service available to all routes
 app.use((req, res, next) => {
   req.mongodb = mongodb;
@@ -53,6 +57,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/channels', channelRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
