@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../../../services/user.service';
 import { AuthService } from '../../../services/auth.service';
+import { FileUploadService } from '../../../services/file-upload.service';
 import { User, UserRole } from '../../../models';
 
 @Component({
@@ -52,6 +53,7 @@ export class UserListComponent implements OnInit {
   constructor(
     private userService: UserService,
     private authService: AuthService,
+    private fileUploadService: FileUploadService,
     private router: Router
   ) {}
 
@@ -380,6 +382,13 @@ export class UserListComponent implements OnInit {
       default:
         return 'bg-secondary';
     }
+  }
+
+  /**
+   * Get avatar URL for display
+   */
+  getAvatarUrl(avatarPath: string): string {
+    return this.fileUploadService.getAvatarUrl(avatarPath);
   }
 
   // Helper method for quick role promotion

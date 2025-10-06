@@ -67,6 +67,35 @@
 .message-header {
   margin-bottom: 0.25rem;
   padding: 0 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e9ecef;
+  flex-shrink: 0;
+}
+
+.user-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  font-size: 1.5rem;
+  flex-shrink: 0;
 }
 
 .username {

@@ -245,7 +245,15 @@
             <tr *ngFor="let user of paginatedUsers">
               <td>
                 <div class="d-flex align-items-center">
-                  <i class="bi bi-person-circle text-muted me-2"></i>
+                  <img 
+                    *ngIf="user.avatarPath" 
+                    [src]="getAvatarUrl(user.avatarPath)" 
+                    alt="{{ user.username }}'s avatar"
+                    class="user-avatar me-2"
+                  >
+                  <div *ngIf="!user.avatarPath" class="user-avatar-placeholder me-2">
+                    <i class="bi bi-person-circle"></i>
+                  </div>
                   <strong>{{ user.username }}</strong>
                 </div>
               </td>

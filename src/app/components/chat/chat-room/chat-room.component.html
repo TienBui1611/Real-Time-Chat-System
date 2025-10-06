@@ -135,7 +135,18 @@
       <div *ngFor="let message of messages" class="message-wrapper">
         <div class="message" [class.my-message]="isMyMessage(message)" [class.other-message]="!isMyMessage(message)">
           <div class="message-header">
-            <strong class="username">{{ message.username }}</strong>
+            <div class="user-info">
+              <img 
+                *ngIf="getUserAvatar(message.username)" 
+                [src]="getUserAvatar(message.username)" 
+                alt="{{ message.username }}'s avatar"
+                class="user-avatar"
+              >
+              <div *ngIf="!getUserAvatar(message.username)" class="user-avatar-placeholder">
+                <i class="bi bi-person-circle"></i>
+              </div>
+              <strong class="username">{{ message.username }}</strong>
+            </div>
             <small class="timestamp text-muted">{{ formatTimestamp(message.timestamp) }}</small>
           </div>
           <div class="message-content">

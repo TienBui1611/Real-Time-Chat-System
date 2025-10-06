@@ -73,8 +73,8 @@ export class ChannelService {
   }
 
   // Get channel members
-  getChannelMembers(channelId: string): Observable<{ members: any[] }> {
-    return this.http.get<{ members: any[] }>(`${this.API_URL}/${channelId}/members`, {
+  getChannelMembers(channelId: string): Observable<{ success: boolean; members: any[] }> {
+    return this.http.get<{ success: boolean; members: any[] }>(`${this.API_URL}/${channelId}/members`, {
       headers: this.getAuthHeaders()
     });
   }

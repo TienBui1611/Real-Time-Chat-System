@@ -125,4 +125,9 @@ export class AuthService {
   getAuthToken(): string | null {
     return this.storageService.load<string>('authToken');
   }
+
+  updateCurrentUser(user: User): void {
+    this.currentUserSubject.next(user);
+    this.storageService.saveCurrentUser(user);
+  }
 }

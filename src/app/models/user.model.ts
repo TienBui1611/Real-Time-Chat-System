@@ -8,6 +8,7 @@ export interface User {
   createdAt: Date;
   lastLogin?: Date;
   isActive: boolean;
+  avatarPath?: string; // Added avatar path field
 }
 
 export interface CreateUserRequest {

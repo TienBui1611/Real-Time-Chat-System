@@ -39,6 +39,11 @@ export const routes: Routes = [
     loadComponent: () => import('./components/chat/chat-room/chat-room.component').then(m => m.ChatRoomComponent),
     canActivate: [AuthGuard]
   },
+  {
+    path: 'profile',
+    loadComponent: () => import('./components/users/user-profile/user-profile.component').then(m => m.UserProfileComponent),
+    canActivate: [AuthGuard]
+  },
   // Catch-all route - redirect to login
   { path: '**', redirectTo: '/login' }
 ];

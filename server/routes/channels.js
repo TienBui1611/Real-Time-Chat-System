@@ -718,4 +718,62 @@ router.delete('/:id/members/:userId', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/channels/:id/members - Get channel members with basic info (for avatars)
+router.get('/:id/members', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get the channel
+    const channel = await req.mongodb.channels.findOne({ 
+      _id: id, 
+      isActive: true 
+    });
+    
+    if (!channel) {
+      return res.status(404).json({
+        success: false,
+        message: 'Channel not found'
+      });
+    }
+    
+    // Check if user is a member of this channel
+    if (!channel.members.includes(req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not a member of this channel'
+      });
+    }
+    
+    // Get basic info for all channel members (username, avatarPath only)
+    const members = await req.mongodb.users.find({ 
+      _id: { $in: channel.members },
+      isActive: true 
+    }, {
+      projection: { 
+        username: 1, 
+        avatarPath: 1,
+        _id: 1
+      }
+    }).toArray();
+    
+    // Add id field for frontend compatibility
+    const membersWithId = members.map(member => ({
+      ...member,
+      id: member._id
+    }));
+    
+    res.json({
+      success: true,
+      members: membersWithId
+    });
+    
+  } catch (error) {
+    console.error('Get channel members error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get channel members'
+    });
+  }
+});
+
 module.exports = router;

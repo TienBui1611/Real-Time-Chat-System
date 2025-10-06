@@ -42,6 +42,47 @@ export class FileUploadService {
   }
 
   /**
+   * Upload user avatar
+   */
+  uploadAvatar(file: File): Observable<UploadResponse | UploadProgress> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    return this.http.post<UploadResponse>(`${this.API_URL}/avatar`, formData, {
+      headers: this.getAuthHeaders(),
+      reportProgress: true,
+      observe: 'events'
+    }).pipe(
+      map((event: HttpEvent<UploadResponse>) => {
+        switch (event.type) {
+          case HttpEventType.UploadProgress:
+            if (event.total) {
+              const progress = Math.round(100 * event.loaded / event.total);
+              return {
+                progress,
+                loaded: event.loaded,
+                total: event.total
+              } as UploadProgress;
+            }
+            break;
+          case HttpEventType.Response:
+            return event.body as UploadResponse;
+        }
+        return { progress: 0, loaded: 0, total: 0 } as UploadProgress;
+      })
+    );
+  }
+
+  /**
+   * Remove user avatar
+   */
+  removeAvatar(): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(`${this.API_URL}/avatar`, {
+      headers: this.getAuthHeaders()
+    });
+  }
+
+  /**
    * Upload chat image
    */
   uploadChatImage(file: File, channelId: string): Observable<UploadResponse | UploadProgress> {
@@ -72,6 +113,15 @@ export class FileUploadService {
         return { progress: 0, loaded: 0, total: 0 } as UploadProgress;
       })
     );
+  }
+
+  /**
+   * Get avatar URL
+   */
+  getAvatarUrl(avatarPath: string): string {
+    if (!avatarPath) return '';
+    if (avatarPath.startsWith('http')) return avatarPath;
+    return `http://localhost:3000${avatarPath}`;
   }
 
   /**

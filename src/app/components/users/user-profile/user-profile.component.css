@@ -1,0 +1,246 @@
+.profile-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.profile-header {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.profile-content {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Avatar Section */
+.avatar-section {
+  text-align: center;
+}
+
+.avatar-container {
+  position: relative;
+  display: inline-block;
+  margin: 1.5rem 0;
+}
+
+.avatar-wrapper {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #e9ecef;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+}
+
+.avatar-placeholder i {
+  font-size: 4rem;
+  margin-bottom: 0.5rem;
+}
+
+.avatar-placeholder span {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Upload Overlay */
+.upload-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.upload-progress {
+  text-align: center;
+  color: white;
+  padding: 1rem;
+}
+
+.upload-progress .progress {
+  width: 120px;
+  height: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.upload-progress small {
+  font-size: 0.8rem;
+}
+
+/* Avatar Controls */
+.avatar-controls {
+  margin: 1rem 0;
+}
+
+.avatar-controls .btn {
+  margin: 0.25rem;
+}
+
+/* Upload Guidelines */
+.upload-guidelines {
+  text-align: left;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.upload-guidelines h6 {
+  color: #495057;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.upload-guidelines ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.upload-guidelines li {
+  margin-bottom: 0.25rem;
+}
+
+/* User Info Section */
+.user-info-section h5 {
+  color: #495057;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.info-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #e9ecef;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #495057;
+  margin: 0;
+}
+
+.info-value {
+  color: #212529;
+  font-weight: 500;
+}
+
+.info-value .badge {
+  font-size: 0.8rem;
+}
+
+/* Profile Actions */
+.profile-actions {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #e9ecef;
+}
+
+.profile-actions h6 {
+  color: #495057;
+  margin-bottom: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .profile-container {
+    padding: 1rem;
+  }
+  
+  .profile-header,
+  .profile-content {
+    padding: 1rem;
+  }
+  
+  .avatar-wrapper {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .avatar-placeholder i {
+    font-size: 3rem;
+  }
+  
+  .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+/* Animation */
+.avatar-image {
+  transition: transform 0.3s ease;
+}
+
+.avatar-wrapper:hover .avatar-image {
+  transform: scale(1.05);
+}
+
+.btn {
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Alert Animations */
+.alert {
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

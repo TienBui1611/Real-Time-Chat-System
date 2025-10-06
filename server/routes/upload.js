@@ -6,7 +6,23 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Configure multer for chat image uploads
+// Configure multer for different upload types
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, '../uploads/avatars');
+    // Ensure directory exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    // Generate unique filename: userId_timestamp.extension
+    const uniqueName = `${req.user._id}_${Date.now()}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  }
+});
+
 const chatImageStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = path.join(__dirname, '../uploads/chat-images');
@@ -35,13 +51,160 @@ const imageFilter = (req, file, cb) => {
   }
 };
 
-// Create multer instance for chat images only
+// Create multer instances for different upload types
+const avatarUpload = multer({
+  storage: avatarStorage,
+  fileFilter: imageFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit for avatars
+    files: 1
+  }
+});
+
 const chatImageUpload = multer({
   storage: chatImageStorage,
   fileFilter: imageFilter,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit for chat images
     files: 1
+  }
+});
+
+// POST /api/upload/avatar - Upload user avatar
+router.post('/avatar', authenticateToken, avatarUpload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'NO_FILE_UPLOADED',
+        message: 'No avatar file was uploaded'
+      });
+    }
+
+    // Generate the avatar URL path
+    const avatarPath = `/uploads/avatars/${req.file.filename}`;
+    
+    // Update user's avatar path in MongoDB
+    const updateResult = await req.mongodb.users.updateOne(
+      { _id: req.user._id },
+      { 
+        $set: { 
+          avatarPath: avatarPath,
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    if (updateResult.matchedCount === 0) {
+      // Clean up uploaded file if user update failed
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      
+      return res.status(404).json({
+        success: false,
+        error: 'USER_NOT_FOUND',
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Avatar uploaded successfully',
+      avatarPath: avatarPath,
+      fileInfo: {
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        mimeType: req.file.mimetype
+      }
+    });
+
+    console.log(`🖼️ Avatar uploaded by ${req.user.username}: ${avatarPath}`);
+
+  } catch (error) {
+    console.error('Avatar upload error:', error);
+    
+    // Clean up uploaded file if database update failed
+    if (req.file && fs.existsSync(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (cleanupError) {
+        console.error('Error cleaning up uploaded file:', cleanupError);
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'UPLOAD_FAILED',
+      message: 'Failed to upload avatar'
+    });
+  }
+});
+
+// DELETE /api/upload/avatar - Remove user avatar
+router.delete('/avatar', authenticateToken, async (req, res) => {
+  try {
+    // Get current user's avatar path
+    const user = await req.mongodb.users.findOne({ _id: req.user._id });
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'USER_NOT_FOUND',
+        message: 'User not found'
+      });
+    }
+
+    const oldAvatarPath = user.avatarPath;
+
+    // Remove avatar path from user document
+    const updateResult = await req.mongodb.users.updateOne(
+      { _id: req.user._id },
+      { 
+        $unset: { avatarPath: "" },
+        $set: { updatedAt: new Date() }
+      }
+    );
+
+    if (updateResult.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'USER_NOT_FOUND',
+        message: 'User not found'
+      });
+    }
+
+    // Delete the physical file if it exists
+    if (oldAvatarPath) {
+      const filename = path.basename(oldAvatarPath);
+      const filePath = path.join(__dirname, '../uploads/avatars', filename);
+      
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+          console.log(`🗑️ Deleted avatar file: ${filename}`);
+        } catch (fileError) {
+          console.error('Error deleting avatar file:', fileError);
+          // Don't fail the request if file deletion fails
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Avatar removed successfully'
+    });
+
+    console.log(`🗑️ Avatar removed for user: ${req.user.username}`);
+
+  } catch (error) {
+    console.error('Avatar removal error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'REMOVAL_FAILED',
+      message: 'Failed to remove avatar'
+    });
   }
 });
 
@@ -148,6 +311,21 @@ router.post('/chat-image', authenticateToken, chatImageUpload.single('image'), a
 });
 
 // GET /uploads/* - Serve uploaded files
+router.get('/avatars/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, '../uploads/avatars', filename);
+  
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).json({
+      success: false,
+      error: 'FILE_NOT_FOUND',
+      message: 'Avatar not found'
+    });
+  }
+});
+
 router.get('/chat-images/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(__dirname, '../uploads/chat-images', filename);

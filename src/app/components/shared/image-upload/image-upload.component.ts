@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Observable } from 'rxjs';
 import { FileUploadService, UploadResponse, UploadProgress } from '../../../services/file-upload.service';
 
 @Component({
@@ -12,7 +13,7 @@ import { FileUploadService, UploadResponse, UploadProgress } from '../../../serv
 export class ImageUploadComponent {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   
-  @Input() uploadType: 'chat-image' = 'chat-image';
+  @Input() uploadType: 'chat-image' | 'avatar' = 'chat-image';
   @Input() channelId?: string;
   @Input() buttonText: string = 'Upload Image';
   @Input() buttonClass: string = 'btn btn-primary';
@@ -118,7 +119,7 @@ export class ImageUploadComponent {
   uploadFile(): void {
     if (!this.selectedFile) return;
 
-    if (!this.channelId) {
+    if (this.uploadType === 'chat-image' && !this.channelId) {
       this.error = 'Channel ID is required for chat images';
       return;
     }
@@ -127,7 +128,13 @@ export class ImageUploadComponent {
     this.uploadProgressValue = 0;
     this.error = '';
 
-    const uploadObservable = this.fileUploadService.uploadChatImage(this.selectedFile, this.channelId);
+    let uploadObservable: Observable<UploadResponse | UploadProgress>;
+
+    if (this.uploadType === 'avatar') {
+      uploadObservable = this.fileUploadService.uploadAvatar(this.selectedFile);
+    } else {
+      uploadObservable = this.fileUploadService.uploadChatImage(this.selectedFile, this.channelId!);
+    }
 
     uploadObservable.subscribe({
       next: (result: UploadResponse | UploadProgress) => {

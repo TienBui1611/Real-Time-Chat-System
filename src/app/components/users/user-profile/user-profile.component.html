@@ -1,0 +1,167 @@
+<div class="profile-container">
+  <!-- Header -->
+  <div class="profile-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center">
+        <button class="btn btn-outline-secondary btn-sm me-3" (click)="goBack()">
+          <i class="bi bi-arrow-left"></i> Back
+        </button>
+        <div>
+          <h4 class="mb-0">My Profile</h4>
+          <small class="text-muted">Manage your account settings</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Content -->
+  <div class="profile-content" *ngIf="currentUser">
+    <div class="row">
+      <!-- Avatar Section -->
+      <div class="col-md-4">
+        <div class="avatar-section">
+          <h5>Profile Picture</h5>
+          
+          <!-- Avatar Display -->
+          <div class="avatar-container">
+            <div class="avatar-wrapper">
+              <img 
+                *ngIf="hasAvatar()" 
+                [src]="getAvatarUrl()" 
+                alt="Profile Avatar"
+                class="avatar-image"
+              >
+              <div *ngIf="!hasAvatar()" class="avatar-placeholder">
+                <i class="bi bi-person-circle"></i>
+                <span>No Avatar</span>
+              </div>
+              
+              <!-- Upload Progress Overlay -->
+              <div *ngIf="isUploading" class="upload-overlay">
+                <div class="upload-progress">
+                  <div class="progress">
+                    <div 
+                      class="progress-bar progress-bar-striped progress-bar-animated" 
+                      [style.width.%]="uploadProgress"
+                    ></div>
+                  </div>
+                  <small>Uploading... {{ uploadProgress }}%</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upload Controls -->
+          <div class="avatar-controls">
+            <label class="btn btn-primary btn-sm" [class.disabled]="isUploading">
+              <i class="bi bi-upload me-1"></i>
+              {{ hasAvatar() ? 'Change Avatar' : 'Upload Avatar' }}
+              <input 
+                type="file" 
+                accept="image/*" 
+                (change)="onAvatarSelect($event)"
+                [disabled]="isUploading"
+                style="display: none;"
+              >
+            </label>
+            
+            <button 
+              *ngIf="hasAvatar()" 
+              class="btn btn-outline-danger btn-sm ms-2"
+              (click)="removeAvatar()"
+              [disabled]="isUploading"
+            >
+              <i class="bi bi-trash me-1"></i>
+              Remove
+            </button>
+          </div>
+
+          <!-- Upload Messages -->
+          <div *ngIf="uploadSuccess" class="alert alert-success mt-3" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            {{ uploadSuccess }}
+          </div>
+          
+          <div *ngIf="uploadError" class="alert alert-danger mt-3" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            {{ uploadError }}
+          </div>
+
+          <!-- Upload Guidelines -->
+          <div class="upload-guidelines mt-3">
+            <h6>Upload Guidelines:</h6>
+            <ul class="small text-muted">
+              <li>Supported formats: JPEG, PNG, GIF, WebP</li>
+              <li>Maximum file size: 5MB</li>
+              <li>Recommended size: 200x200 pixels</li>
+              <li>Square images work best</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Info Section -->
+      <div class="col-md-8">
+        <div class="user-info-section">
+          <h5>Account Information</h5>
+          
+          <div class="info-card">
+            <div class="info-item">
+              <label class="info-label">Username:</label>
+              <span class="info-value">{{ currentUser.username }}</span>
+            </div>
+            
+            <div class="info-item">
+              <label class="info-label">Email:</label>
+              <span class="info-value">{{ currentUser.email }}</span>
+            </div>
+            
+            <div class="info-item">
+              <label class="info-label">Role:</label>
+              <span class="info-value">
+                <span class="badge" 
+                      [class.bg-danger]="currentUser.role === 'superAdmin'"
+                      [class.bg-warning]="currentUser.role === 'groupAdmin'"
+                      [class.bg-primary]="currentUser.role === 'user'">
+                  {{ currentUser.role === 'superAdmin' ? 'Super Admin' : 
+                     currentUser.role === 'groupAdmin' ? 'Group Admin' : 'User' }}
+                </span>
+              </span>
+            </div>
+            
+            <div class="info-item" *ngIf="currentUser.lastLogin">
+              <label class="info-label">Last Login:</label>
+              <span class="info-value">{{ currentUser.lastLogin | date:'medium' }}</span>
+            </div>
+            
+            <div class="info-item">
+              <label class="info-label">Account Status:</label>
+              <span class="info-value">
+                <span class="badge bg-success">Active</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Additional Actions -->
+          <div class="profile-actions mt-4">
+            <h6>Quick Actions</h6>
+            <div class="d-flex gap-2 flex-wrap">
+              <button class="btn btn-outline-primary btn-sm" (click)="goBack()">
+                <i class="bi bi-speedometer2 me-1"></i>
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="!currentUser" class="text-center p-4">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2">Loading profile...</p>
+  </div>
+</div>

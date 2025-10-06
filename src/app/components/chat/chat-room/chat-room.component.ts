@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SocketService, ChatMessage, UserNotification } from '../../../services/socket.service';
 import { ChannelService } from '../../../services/channel.service';
+import { UserService } from '../../../services/user.service';
 import { AuthService } from '../../../services/auth.service';
 import { FileUploadService, UploadResponse } from '../../../services/file-upload.service';
 import { PeerConnectionService, PeerConnectionState } from '../../../services/peer-connection.service';
@@ -28,6 +29,9 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
   messages: ChatMessage[] = [];
   systemNotifications: UserNotification[] = [];
   newMessage: string = '';
+  
+  // User cache for avatars
+  userCache: Map<string, User> = new Map();
   
   // Video call state
   showVideoCall = false;
@@ -57,6 +61,7 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
     private router: Router,
     private socketService: SocketService,
     private channelService: ChannelService,
+    private userService: UserService,
     private authService: AuthService,
     private fileUploadService: FileUploadService,
     private peerConnectionService: PeerConnectionService
@@ -118,12 +123,55 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
       next: (response) => {
         this.channel = response.channel;
         this.isLoading = false;
+        
+        // Load channel members to cache their avatars
+        this.loadChannelMembers();
       },
       error: (error) => {
         this.error = error.error?.message || 'Failed to load channel';
         this.isLoading = false;
       }
     });
+  }
+
+  /**
+   * Load channel members and cache their information for avatar display
+   */
+  private loadChannelMembers(): void {
+    if (!this.channel) return;
+
+    // Use the new channel members endpoint that works for all users
+    this.channelService.getChannelMembers(this.channel.id).subscribe({
+      next: (response) => {
+        if (response.success && response.members) {
+          // Cache all channel members
+          response.members.forEach(member => {
+            this.userCache.set(member.username, member);
+          });
+          
+          console.log(`Cached ${response.members.length} channel members for avatar display`);
+        }
+      },
+      error: (error) => {
+        console.error('Failed to load channel members:', error);
+        // Fallback to individual loading using search
+        this.fallbackToSearchLoading();
+      }
+    });
+    
+    // Always cache the current user
+    if (this.currentUser) {
+      this.userCache.set(this.currentUser.username, this.currentUser);
+    }
+  }
+
+  /**
+   * Fallback method to load users using search (works for all user types)
+   */
+  private fallbackToSearchLoading(): void {
+    // This method will be called when encountering unknown usernames
+    // in the getUserAvatar method, so we don't need to do anything here
+    console.log('Using fallback search-based loading for avatars');
   }
 
   /**
@@ -351,6 +399,48 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
    */
   getImageUrl(imagePath: string): string {
     return this.fileUploadService.getChatImageUrl(imagePath);
+  }
+
+  /**
+   * Get user avatar URL by username
+   */
+  getUserAvatar(username: string): string {
+    // Check cache first
+    const cachedUser = this.userCache.get(username);
+    if (cachedUser && cachedUser.avatarPath) {
+      return this.fileUploadService.getAvatarUrl(cachedUser.avatarPath);
+    }
+    
+    // If user not in cache, try to load them (for new users who joined)
+    if (!this.userCache.has(username)) {
+      this.loadUserByUsername(username);
+    }
+    
+    // Fallback to current user check (for immediate display)
+    if (this.currentUser && this.currentUser.username === username && this.currentUser.avatarPath) {
+      return this.fileUploadService.getAvatarUrl(this.currentUser.avatarPath);
+    }
+    
+    return '';
+  }
+
+  /**
+   * Load user information by username and cache it
+   */
+  private loadUserByUsername(username: string): void {
+    // Use search to find user by username
+    this.userService.searchUsers(username).subscribe({
+      next: (response) => {
+        const user = response.users.find(u => u.username === username);
+        if (user) {
+          this.userCache.set(username, user);
+          console.log(`Cached user: ${username}`);
+        }
+      },
+      error: (error) => {
+        console.error(`Failed to load user ${username}:`, error);
+      }
+    });
   }
 
   /**
