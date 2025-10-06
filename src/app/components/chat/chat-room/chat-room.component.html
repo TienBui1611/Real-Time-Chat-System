@@ -11,6 +11,93 @@
           <small class="text-muted" *ngIf="channel">{{ channel.description }}</small>
         </div>
       </div>
+      
+      <!-- Video Call and Peer Connection Controls -->
+      <div class="d-flex align-items-center gap-2">
+        <!-- Info Button -->
+        <button 
+          class="btn btn-outline-info btn-sm" 
+          (click)="showVideoCallInfoDialog()"
+          title="How to make video calls"
+        >
+          <i class="bi bi-info-circle"></i>
+        </button>
+
+        <!-- Video Call Button -->
+        <button 
+          class="btn btn-outline-primary btn-sm" 
+          (click)="startVideoCall()"
+          title="Start Video Call"
+          [disabled]="!peerConnectionState.isConnected"
+        >
+          <i class="bi bi-camera-video me-1"></i>
+          Video Call
+        </button>
+
+        <!-- Peer Connection Button -->
+        <button 
+          *ngIf="!peerConnectionState.isConnected && !peerConnectionState.isConnecting"
+          class="btn btn-outline-success btn-sm" 
+          (click)="connectToPeer()"
+          title="Connect to Peer Network"
+        >
+          <i class="bi bi-wifi me-1"></i>
+          Connect
+        </button>
+
+        <!-- Connecting Status -->
+        <button 
+          *ngIf="peerConnectionState.isConnecting"
+          class="btn btn-outline-warning btn-sm" 
+          disabled
+          title="Connecting to Peer Network"
+        >
+          <i class="bi bi-hourglass-split me-1"></i>
+          Connecting...
+        </button>
+
+        <!-- Connected Status with Peer ID -->
+        <div *ngIf="peerConnectionState.isConnected" class="d-flex align-items-center gap-1">
+          <span class="badge bg-success">
+            <i class="bi bi-wifi me-1"></i>
+            Connected
+          </span>
+          
+          <div class="peer-id-display">
+            <span class="badge bg-secondary text-monospace">{{ peerConnectionState.peerId }}</span>
+            <button 
+              class="btn btn-outline-secondary btn-sm ms-1" 
+              (click)="copyPeerId()"
+              title="Copy Peer ID"
+            >
+              <i class="bi bi-clipboard"></i>
+            </button>
+          </div>
+
+          <button 
+            class="btn btn-outline-warning btn-sm ms-1" 
+            (click)="resetPeerConnection()"
+            title="Reset Connection"
+          >
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+
+        <!-- Error State -->
+        <div *ngIf="peerConnectionState.error" class="d-flex align-items-center gap-1">
+          <span class="badge bg-danger">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Error
+          </span>
+          <button 
+            class="btn btn-outline-danger btn-sm" 
+            (click)="resetPeerConnection()"
+            title="Retry Connection"
+          >
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -122,4 +209,19 @@
     </div>
   </div>
 </div>
+
+<!-- Video Call Component -->
+<app-video-call
+  *ngIf="showVideoCall"
+  [channelId]="channel?.id || ''"
+  [isVisible]="showVideoCall"
+  (callEnded)="endVideoCall()"
+  (callError)="onVideoCallError($event)">
+</app-video-call>
+
+<!-- Video Call Info Component -->
+<app-video-call-info
+  [isVisible]="showVideoCallInfo"
+  (closed)="closeVideoCallInfo()">
+</app-video-call-info>
 

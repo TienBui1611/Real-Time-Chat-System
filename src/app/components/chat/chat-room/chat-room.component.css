@@ -263,3 +263,36 @@
   background: #a8a8a8;
 }
 
+/* Peer Connection Styles */
+.peer-id-display {
+  display: flex;
+  align-items: center;
+}
+
+.peer-id-display .badge {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.peer-id-display .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* Video call and peer connection controls */
+.chat-header .d-flex.gap-2 {
+  flex-wrap: wrap;
+}
+
+.chat-header .badge {
+  font-size: 0.75rem;
+}
+
+.text-monospace {
+  font-family: 'Courier New', monospace;
+}
+

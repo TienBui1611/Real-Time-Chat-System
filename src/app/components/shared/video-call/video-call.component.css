@@ -1,0 +1,495 @@
+/* Video Call Modal */
+.video-call-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-call-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.video-call-container {
+  position: relative;
+  width: 90vw;
+  max-width: 800px;
+  height: 80vh;
+  max-height: 600px;
+  background: #1a1a1a;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Header */
+.video-call-header {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.call-info h5 {
+  color: white;
+  margin: 0;
+}
+
+.call-info small {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.video-call-header .btn {
+  color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.3);
+  background: transparent;
+}
+
+.video-call-header .btn:hover {
+  color: white;
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Video Area */
+.video-area {
+  flex: 1;
+  position: relative;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remote-video-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remote-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+}
+
+.remote-video.hidden {
+  display: none;
+}
+
+/* No Video Placeholder */
+.no-video-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+}
+
+.placeholder-content {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.placeholder-content i {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.placeholder-content h6 {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-weight: 500;
+}
+
+.placeholder-content .text-muted {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Local Video (Picture-in-Picture) */
+.local-video-container {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 200px;
+  height: 150px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: #000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.local-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-label {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Controls */
+.video-controls {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.control-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.control-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+  transform: scale(1.05);
+}
+
+.control-btn i {
+  font-size: 1.1rem;
+}
+
+.call-status {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.call-status small {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.call-status .text-muted {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Quick Actions */
+.quick-actions {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  margin: 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.action-section h6 {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.5rem;
+}
+
+.action-section p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+}
+
+.action-section .text-muted {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.action-section small {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Global text color overrides for video call modal */
+.video-call-container .text-muted {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.video-call-container small {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.video-call-container h6 {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.video-call-container p {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Ensure all text elements are visible */
+.video-call-container * {
+  color: inherit;
+}
+
+.video-call-container .text-dark {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.video-call-container .text-info {
+  color: rgba(13, 202, 240, 0.8) !important;
+}
+
+/* Error Display */
+.error-display {
+  background: rgba(220, 53, 69, 0.2);
+  border: 1px solid rgba(220, 53, 69, 0.5);
+  padding: 1rem;
+  margin: 1rem;
+  border-radius: 8px;
+  color: #fff;
+  text-align: center;
+}
+
+.error-display i {
+  color: #dc3545;
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+}
+
+.error-display .error-text {
+  color: #fff;
+  font-weight: 500;
+  margin: 0;
+}
+
+.peer-id-display {
+  margin-bottom: 1rem;
+}
+
+.peer-id-display .form-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.peer-id-display .form-control {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+.peer-id-display .form-control:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.peer-id-display small {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+/* Form Controls */
+.form-control {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-size: 0.9rem;
+}
+
+.form-control:focus {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #007bff;
+  color: white;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-control::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.form-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.btn-outline-light {
+  color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-outline-light:hover {
+  color: #000;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+.btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+  border-color: #004085;
+}
+
+.input-group .btn {
+  border-left: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .video-call-container {
+    width: 95vw;
+    height: 90vh;
+  }
+  
+  .local-video-container {
+    width: 120px;
+    height: 90px;
+    top: 10px;
+    right: 10px;
+  }
+  
+  .control-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  
+  .video-call-header,
+  .video-controls,
+  .quick-actions {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .video-call-container {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+  
+  .local-video-container {
+    width: 100px;
+    height: 75px;
+  }
+  
+  .control-buttons {
+    gap: 0.25rem;
+  }
+  
+  .control-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Animation */
+.video-call-modal {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.video-call-container {
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Connection Status Indicators */
+.bi-circle-fill.text-success {
+  color: #28a745 !important;
+}
+
+.bi-circle-fill.text-warning {
+  color: #ffc107 !important;
+}
+
+.bi-circle-fill.text-danger {
+  color: #dc3545 !important;
+}
+
+/* Button States */
+.btn-success {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+.btn-success:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+.btn-warning {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  color: #212529;
+}
+
+.btn-warning:hover {
+  background-color: #e0a800;
+  border-color: #d39e00;
+  color: #212529;
+}

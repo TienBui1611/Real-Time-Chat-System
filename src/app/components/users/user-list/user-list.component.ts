@@ -16,11 +16,24 @@ import { User, UserRole } from '../../../models';
 export class UserListComponent implements OnInit {
   users: User[] = [];
   filteredUsers: User[] = [];
+  paginatedUsers: User[] = [];
   searchQuery = '';
   isLoading = false;
   error = '';
   showCreateForm = false;
   editingUser: User | null = null;
+  
+  // Pagination properties
+  currentPage = 1;
+  itemsPerPage = 10;
+  totalPages = 0;
+  
+  // Sorting properties
+  sortBy: 'username' | 'email' | 'role' | 'createdAt' = 'username';
+  sortOrder: 'asc' | 'desc' = 'asc';
+  
+  // Filter properties
+  roleFilter: UserRole | 'all' = 'all';
   
   // For user creation/editing
   userForm = {
@@ -32,6 +45,9 @@ export class UserListComponent implements OnInit {
 
   // Make enum available in template
   UserRole = UserRole;
+  
+  // Make Math available in template
+  Math = Math;
 
   constructor(
     private userService: UserService,
@@ -50,7 +66,7 @@ export class UserListComponent implements OnInit {
     this.userService.getAllUsers().subscribe({
       next: (response) => {
         this.users = response.users;
-        this.filteredUsers = [...this.users];
+        this.applyFilters();
         this.isLoading = false;
       },
       error: (error) => {
@@ -64,23 +80,133 @@ export class UserListComponent implements OnInit {
     });
   }
 
-  onSearch(): void {
-    if (!this.searchQuery.trim()) {
-      this.filteredUsers = [...this.users];
-      return;
+  applyFilters(): void {
+    let filtered = [...this.users];
+
+    // Apply search filter
+    if (this.searchQuery.trim()) {
+      const query = this.searchQuery.toLowerCase();
+      filtered = filtered.filter(user =>
+        user.username.toLowerCase().includes(query) ||
+        user.email.toLowerCase().includes(query) ||
+        user.role.toLowerCase().includes(query)
+      );
     }
 
-    const query = this.searchQuery.toLowerCase();
-    this.filteredUsers = this.users.filter(user =>
-      user.username.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query) ||
-      user.role.toLowerCase().includes(query)
-    );
+    // Apply role filter
+    if (this.roleFilter !== 'all') {
+      filtered = filtered.filter(user => user.role === this.roleFilter);
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (this.sortBy) {
+        case 'username':
+          comparison = a.username.localeCompare(b.username);
+          break;
+        case 'email':
+          comparison = a.email.localeCompare(b.email);
+          break;
+        case 'role':
+          comparison = a.role.localeCompare(b.role);
+          break;
+        case 'createdAt':
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+
+      return this.sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    this.filteredUsers = filtered;
+    this.updatePagination();
+  }
+
+  updatePagination(): void {
+    this.totalPages = Math.ceil(this.filteredUsers.length / this.itemsPerPage);
+    
+    // Reset to first page if current page is out of bounds
+    if (this.currentPage > this.totalPages && this.totalPages > 0) {
+      this.currentPage = 1;
+    }
+    
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    this.paginatedUsers = this.filteredUsers.slice(startIndex, endIndex);
+  }
+
+  onSearch(): void {
+    this.currentPage = 1; // Reset to first page when searching
+    this.applyFilters();
+  }
+
+  onRoleFilterChange(): void {
+    this.currentPage = 1; // Reset to first page when filtering
+    this.applyFilters();
+  }
+
+  onSort(column: 'username' | 'email' | 'role' | 'createdAt'): void {
+    if (this.sortBy === column) {
+      this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortBy = column;
+      this.sortOrder = 'asc';
+    }
+    this.applyFilters();
+  }
+
+  getSortIcon(column: string): string {
+    if (this.sortBy !== column) return 'bi-arrow-down-up';
+    return this.sortOrder === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down';
+  }
+
+  // Pagination methods
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.updatePagination();
+    }
+  }
+
+  previousPage(): void {
+    this.goToPage(this.currentPage - 1);
+  }
+
+  nextPage(): void {
+    this.goToPage(this.currentPage + 1);
+  }
+
+  changeItemsPerPage(newSize: number): void {
+    this.itemsPerPage = newSize;
+    this.currentPage = 1;
+    this.updatePagination();
+  }
+
+  getPageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxPagesToShow = 5;
+    const halfRange = Math.floor(maxPagesToShow / 2);
+    
+    let startPage = Math.max(1, this.currentPage - halfRange);
+    let endPage = Math.min(this.totalPages, startPage + maxPagesToShow - 1);
+    
+    // Adjust start page if we're near the end
+    if (endPage - startPage < maxPagesToShow - 1) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
   }
 
   clearSearch(): void {
     this.searchQuery = '';
-    this.filteredUsers = [...this.users];
+    this.applyFilters();
   }
 
   showCreateUserForm(): void {

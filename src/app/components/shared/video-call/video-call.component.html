@@ -1,0 +1,172 @@
+<div class="video-call-modal" *ngIf="isVisible">
+  <div class="video-call-overlay" (click)="closeVideoCall()"></div>
+  
+  <div class="video-call-container">
+    <!-- Header -->
+    <div class="video-call-header">
+      <div class="call-info">
+        <h5 class="mb-0">
+          <i class="bi bi-camera-video me-2"></i>
+          Video Call
+        </h5>
+        <small class="text-muted">{{ peerConnectionState.status }}</small>
+      </div>
+      <button 
+        class="btn btn-outline-secondary btn-sm" 
+        (click)="closeVideoCall()"
+        title="Close video call"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Video Area -->
+    <div class="video-area">
+      <!-- Remote Video (Main) -->
+      <div class="remote-video-container">
+        <video 
+          #remoteVideo 
+          class="remote-video" 
+          autoplay 
+          playsinline
+          [class.hidden]="!isConnected"
+        ></video>
+        
+        <!-- No Remote Video Placeholder -->
+        <div *ngIf="!isConnected" class="no-video-placeholder">
+          <div class="placeholder-content">
+            <i class="bi bi-person-video3 display-1"></i>
+            <h6 class="mt-2">{{ peerConnectionState.status }}</h6>
+            <div *ngIf="isInitiating" class="spinner-border text-primary mt-2" role="status">
+              <span class="visually-hidden">Connecting...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Local Video (Picture-in-Picture) -->
+      <div class="local-video-container">
+        <video 
+          #localVideo 
+          class="local-video" 
+          autoplay 
+          playsinline 
+          muted
+        ></video>
+        <div class="video-label">You</div>
+      </div>
+    </div>
+
+    <!-- Error Display -->
+    <div *ngIf="errorMessage" class="error-display">
+      <i class="bi bi-exclamation-triangle"></i>
+      <p class="error-text">{{ errorMessage }}</p>
+      <button class="btn btn-outline-light btn-sm mt-2" (click)="clearError()">
+        <i class="bi bi-x me-1"></i>
+        Dismiss
+      </button>
+    </div>
+
+    <!-- Controls -->
+    <div class="video-controls">
+      <div class="control-buttons">
+        <!-- Video Toggle -->
+        <button 
+          class="btn control-btn" 
+          [class.btn-danger]="!isVideoEnabled"
+          [class.btn-success]="isVideoEnabled"
+          (click)="toggleVideo()"
+          [disabled]="!localStream"
+          title="Toggle camera"
+        >
+          <i class="bi" [class.bi-camera-video]="isVideoEnabled" [class.bi-camera-video-off]="!isVideoEnabled"></i>
+        </button>
+
+        <!-- End Call -->
+        <button 
+          class="btn btn-danger control-btn" 
+          (click)="endCall()"
+          [disabled]="!isConnected && !isInitiating"
+          title="End call"
+        >
+          <i class="bi bi-telephone-x"></i>
+        </button>
+
+        <!-- Reset Connection - Only show when NOT in call -->
+        <button 
+          *ngIf="!isConnected && !isInitiating"
+          class="btn btn-warning control-btn" 
+          (click)="peerConnectionService.reset()" 
+          title="Reset Connection"
+        >
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      </div>
+
+      <!-- Call Status -->
+      <div class="call-status">
+        <small>
+          <i class="bi bi-circle-fill me-1" 
+             [class.text-success]="isConnected" 
+             [class.text-warning]="isInitiating" 
+             [class.text-danger]="!isConnected && !isInitiating">
+          </i>
+          {{ peerConnectionState.status }}
+        </small>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions" *ngIf="!isConnected && !isInitiating && !errorMessage && peerConnectionState.isConnected">
+      <div class="action-section">
+        <h6 class="text-light mb-2">
+          <i class="bi bi-camera-video me-2"></i>
+          Make a Video Call
+        </h6>
+        <p class="small mb-3">
+          Enter the Peer ID of the person you want to call below.
+        </p>
+        
+        <!-- Call Someone -->
+        <div class="mt-3">
+          <label class="form-label small">Call someone by Peer ID:</label>
+          <div class="input-group input-group-sm">
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="Paste the other person's Peer ID here"
+              [(ngModel)]="targetPeerId"
+              #peerIdInput
+            >
+            <button 
+              class="btn btn-primary" 
+              type="button"
+              (click)="initiateCall(peerIdInput.value)"
+              [disabled]="!peerIdInput.value || !peerConnectionState.isConnected || isInitiating"
+            >
+              <i class="bi bi-telephone me-1"></i>
+              Call
+            </button>
+          </div>
+          <small><strong>Get the Peer ID</strong> from the other person and paste it above</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connection Required Message -->
+    <div class="quick-actions" *ngIf="!isConnected && !isInitiating && !errorMessage && !peerConnectionState.isConnected">
+      <div class="action-section text-center">
+        <h6 class="text-light mb-2">
+          <i class="bi bi-wifi-off me-2"></i>
+          Peer Connection Required
+        </h6>
+        <p class="small mb-3">
+          You need to connect to the peer network first before making video calls.
+        </p>
+        <p class="small text-info">
+          💡 Click the "Connect" button in the chat header to get started.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

@@ -31,11 +31,11 @@
     <button type="button" class="btn-close" (click)="error = ''" aria-label="Close"></button>
   </div>
 
-  <!-- Search Bar -->
+  <!-- Search and Filter Bar -->
   <div class="card mb-4">
     <div class="card-body">
-      <div class="row">
-        <div class="col-md-6">
+      <div class="row align-items-center">
+        <div class="col-md-4">
           <div class="input-group">
             <span class="input-group-text">
               <i class="bi bi-search"></i>
@@ -57,9 +57,34 @@
             </button>
           </div>
         </div>
-        <div class="col-md-6 text-end">
+        <div class="col-md-3">
+          <select 
+            class="form-select" 
+            [(ngModel)]="roleFilter" 
+            (change)="onRoleFilterChange()"
+          >
+            <option value="all">All Roles</option>
+            <option [value]="UserRole.USER">{{ getRoleDisplay(UserRole.USER) }}</option>
+            <option [value]="UserRole.GROUP_ADMIN">{{ getRoleDisplay(UserRole.GROUP_ADMIN) }}</option>
+            <option [value]="UserRole.SUPER_ADMIN">{{ getRoleDisplay(UserRole.SUPER_ADMIN) }}</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select 
+            class="form-select" 
+            [(ngModel)]="itemsPerPage" 
+            (change)="changeItemsPerPage(itemsPerPage)"
+          >
+            <option [value]="5">5 per page</option>
+            <option [value]="10">10 per page</option>
+            <option [value]="25">25 per page</option>
+            <option [value]="50">50 per page</option>
+          </select>
+        </div>
+        <div class="col-md-3 text-end">
           <span class="text-muted">
-            Showing {{ filteredUsers.length }} of {{ users.length }} users
+            Showing {{ (currentPage - 1) * itemsPerPage + 1 }}-{{ Math.min(currentPage * itemsPerPage, filteredUsers.length) }} 
+            of {{ filteredUsers.length }} users
           </span>
         </div>
       </div>
@@ -189,15 +214,35 @@
         <table class="table table-hover mb-0">
           <thead class="table-light">
             <tr>
-              <th>Username</th>
-              <th>Email</th>
-              <th>Roles</th>
-              <th>Created</th>
+              <th class="sortable" (click)="onSort('username')">
+                <div class="d-flex align-items-center">
+                  Username
+                  <i class="bi ms-2" [class]="getSortIcon('username')"></i>
+                </div>
+              </th>
+              <th class="sortable" (click)="onSort('email')">
+                <div class="d-flex align-items-center">
+                  Email
+                  <i class="bi ms-2" [class]="getSortIcon('email')"></i>
+                </div>
+              </th>
+              <th class="sortable" (click)="onSort('role')">
+                <div class="d-flex align-items-center">
+                  Role
+                  <i class="bi ms-2" [class]="getSortIcon('role')"></i>
+                </div>
+              </th>
+              <th class="sortable" (click)="onSort('createdAt')">
+                <div class="d-flex align-items-center">
+                  Created
+                  <i class="bi ms-2" [class]="getSortIcon('createdAt')"></i>
+                </div>
+              </th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let user of filteredUsers">
+            <tr *ngFor="let user of paginatedUsers">
               <td>
                 <div class="d-flex align-items-center">
                   <i class="bi bi-person-circle text-muted me-2"></i>
@@ -246,22 +291,84 @@
       </div>
       
       <!-- Empty State -->
-      <div *ngIf="filteredUsers.length === 0 && !isLoading" class="text-center py-5">
+      <div *ngIf="paginatedUsers.length === 0 && !isLoading" class="text-center py-5">
         <i class="bi bi-people display-1 text-muted"></i>
         <h5 class="text-muted mt-3">
-          {{ searchQuery ? 'No users found matching your search' : 'No users found' }}
+          {{ searchQuery || roleFilter !== 'all' ? 'No users found matching your criteria' : 'No users found' }}
         </h5>
         <p class="text-muted">
-          {{ searchQuery ? 'Try adjusting your search criteria' : 'Create your first user to get started' }}
+          {{ searchQuery || roleFilter !== 'all' ? 'Try adjusting your search or filter criteria' : 'Create your first user to get started' }}
         </p>
         <button 
-          *ngIf="!searchQuery" 
+          *ngIf="!searchQuery && roleFilter === 'all'" 
           class="btn btn-primary"
           (click)="showCreateUserForm()"
         >
           <i class="bi bi-person-plus me-2"></i>
           Create First User
         </button>
+      </div>
+
+      <!-- Pagination -->
+      <div *ngIf="totalPages > 1" class="d-flex justify-content-between align-items-center p-3 border-top">
+        <div class="d-flex align-items-center">
+          <span class="text-muted me-3">
+            Page {{ currentPage }} of {{ totalPages }}
+          </span>
+        </div>
+        
+        <nav aria-label="User list pagination">
+          <ul class="pagination pagination-sm mb-0">
+            <!-- Previous Button -->
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <button 
+                class="page-link" 
+                (click)="previousPage()" 
+                [disabled]="currentPage === 1"
+                aria-label="Previous"
+              >
+                <i class="bi bi-chevron-left"></i>
+              </button>
+            </li>
+
+            <!-- First Page -->
+            <li *ngIf="getPageNumbers()[0] > 1" class="page-item">
+              <button class="page-link" (click)="goToPage(1)">1</button>
+            </li>
+            <li *ngIf="getPageNumbers()[0] > 2" class="page-item disabled">
+              <span class="page-link">...</span>
+            </li>
+
+            <!-- Page Numbers -->
+            <li 
+              *ngFor="let page of getPageNumbers()" 
+              class="page-item" 
+              [class.active]="page === currentPage"
+            >
+              <button class="page-link" (click)="goToPage(page)">{{ page }}</button>
+            </li>
+
+            <!-- Last Page -->
+            <li *ngIf="getPageNumbers()[getPageNumbers().length - 1] < totalPages - 1" class="page-item disabled">
+              <span class="page-link">...</span>
+            </li>
+            <li *ngIf="getPageNumbers()[getPageNumbers().length - 1] < totalPages" class="page-item">
+              <button class="page-link" (click)="goToPage(totalPages)">{{ totalPages }}</button>
+            </li>
+
+            <!-- Next Button -->
+            <li class="page-item" [class.disabled]="currentPage === totalPages">
+              <button 
+                class="page-link" 
+                (click)="nextPage()" 
+                [disabled]="currentPage === totalPages"
+                aria-label="Next"
+              >
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </li>
+          </ul>
+        </nav>
       </div>
     </div>
   </div>

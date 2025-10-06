@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
+const { PeerServer } = require('peer');
 
 // Import services
 const MongoDBService = require('./services/mongodb');
@@ -28,6 +29,28 @@ const io = new Server(server, {
     credentials: true
   }
 });
+
+// Initialize PeerJS server integrated with Express
+const peerServer = PeerServer({
+  port: 9000,
+  path: '/peerjs',
+  corsOptions: {
+    origin: 'http://localhost:4200',
+    credentials: true
+  },
+  allow_discovery: true
+});
+
+// Handle PeerJS server events
+peerServer.on('connection', (client) => {
+  console.log('🎥 Peer connected:', client.getId());
+});
+
+peerServer.on('disconnect', (client) => {
+  console.log('🎥 Peer disconnected:', client.getId());
+});
+
+console.log('🎥 PeerJS server running on port 9000');
 
 // Initialize MongoDB service
 const mongodb = new MongoDBService();

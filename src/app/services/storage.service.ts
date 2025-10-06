@@ -10,44 +10,44 @@ export class StorageService {
 
   constructor() { }
 
-  // Generic storage methods
+  // Generic storage methods - Use sessionStorage for tab-specific data
   save<T>(key: string, data: T): void {
     try {
       const serialized = JSON.stringify(data);
-      localStorage.setItem(key, serialized);
+      sessionStorage.setItem(key, serialized); // Changed from localStorage to sessionStorage
     } catch (error) {
-      console.error('Failed to save to localStorage:', error);
+      console.error('Failed to save to sessionStorage:', error);
     }
   }
 
   load<T>(key: string): T | null {
     try {
-      const item = localStorage.getItem(key);
+      const item = sessionStorage.getItem(key); // Changed from localStorage to sessionStorage
       return item ? JSON.parse(item) : null;
     } catch (error) {
-      console.error('Failed to load from localStorage:', error);
+      console.error('Failed to load from sessionStorage:', error);
       return null;
     }
   }
 
   remove(key: string): void {
     try {
-      localStorage.removeItem(key);
+      sessionStorage.removeItem(key); // Changed from localStorage to sessionStorage
     } catch (error) {
-      console.error('Failed to remove from localStorage:', error);
+      console.error('Failed to remove from sessionStorage:', error);
     }
   }
 
   clear(): void {
     try {
-      localStorage.clear();
+      sessionStorage.clear(); // Changed from localStorage to sessionStorage
     } catch (error) {
-      console.error('Failed to clear localStorage:', error);
+      console.error('Failed to clear sessionStorage:', error);
     }
   }
 
   exists(key: string): boolean {
-    return localStorage.getItem(key) !== null;
+    return sessionStorage.getItem(key) !== null; // Changed from localStorage to sessionStorage
   }
 
   // Specific storage methods for user data

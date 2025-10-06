@@ -7,13 +7,16 @@ import { SocketService, ChatMessage, UserNotification } from '../../../services/
 import { ChannelService } from '../../../services/channel.service';
 import { AuthService } from '../../../services/auth.service';
 import { FileUploadService, UploadResponse } from '../../../services/file-upload.service';
+import { PeerConnectionService, PeerConnectionState } from '../../../services/peer-connection.service';
 import { Channel, User } from '../../../models';
 import { ImageUploadComponent } from '../../shared/image-upload/image-upload.component';
+import { VideoCallComponent } from '../../shared/video-call/video-call.component';
+import { VideoCallInfoComponent } from '../../shared/video-call-info/video-call-info.component';
 
 @Component({
   selector: 'app-chat-room',
   standalone: true,
-  imports: [CommonModule, FormsModule, ImageUploadComponent],
+  imports: [CommonModule, FormsModule, ImageUploadComponent, VideoCallComponent, VideoCallInfoComponent],
   templateUrl: './chat-room.component.html',
   styleUrls: ['./chat-room.component.css']
 })
@@ -25,12 +28,25 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
   messages: ChatMessage[] = [];
   systemNotifications: UserNotification[] = [];
   newMessage: string = '';
+  
+  // Video call state
+  showVideoCall = false;
+  showVideoCallInfo = false;
   currentUser: User | null = null;
   isConnected: boolean = false;
   typingUsers: string[] = [];
   isLoading: boolean = true;
   error: string = '';
   socketError: string = '';
+
+  // Peer connection state
+  peerConnectionState: PeerConnectionState = {
+    isConnected: false,
+    isConnecting: false,
+    peerId: null,
+    status: 'Disconnected',
+    error: null
+  };
 
   private subscriptions: Subscription[] = [];
   private typingTimer: any;
@@ -42,7 +58,8 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
     private socketService: SocketService,
     private channelService: ChannelService,
     private authService: AuthService,
-    private fileUploadService: FileUploadService
+    private fileUploadService: FileUploadService,
+    private peerConnectionService: PeerConnectionService
   ) {}
 
   ngOnInit(): void {
@@ -60,9 +77,15 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
-    this.loadChannel(channelId);
-    this.initializeSocket();
+    // Setup socket subscriptions FIRST, then initialize socket and load channel
     this.setupSocketSubscriptions();
+    this.setupPeerConnectionSubscription();
+    
+    // Initialize socket connection
+    this.initializeSocket();
+    
+    // Load channel data
+    this.loadChannel(channelId);
   }
 
   ngOnDestroy(): void {
@@ -107,13 +130,24 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
    * Initialize socket connection
    */
   private initializeSocket(): void {
+    // Connect to socket server
     this.socketService.connect();
     
-    // Join the channel
-    const channelId = this.route.snapshot.paramMap.get('channelId');
-    if (channelId) {
-      this.socketService.joinChannel(channelId);
-    }
+    // Wait for connection before joining channel
+    const connectionSub = this.socketService.connectionStatus$.subscribe(isConnected => {
+      if (isConnected) {
+        const channelId = this.route.snapshot.paramMap.get('channelId');
+        if (channelId) {
+          console.log('Socket connected, joining channel:', channelId);
+          this.socketService.joinChannel(channelId);
+        }
+        // Unsubscribe after first successful connection
+        connectionSub.unsubscribe();
+      }
+    });
+    
+    // Add to subscriptions for cleanup (in case connection never happens)
+    this.subscriptions.push(connectionSub);
   }
 
   /**
@@ -336,5 +370,62 @@ export class ChatRoomComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (this.typingUsers.length === 1) return `${this.typingUsers[0]} is typing...`;
     if (this.typingUsers.length === 2) return `${this.typingUsers[0]} and ${this.typingUsers[1]} are typing...`;
     return `${this.typingUsers.length} people are typing...`;
+  }
+
+  // Video call methods
+  startVideoCall(): void {
+    this.showVideoCall = true;
+  }
+
+  endVideoCall(): void {
+    this.showVideoCall = false;
+  }
+
+  onVideoCallError(error: string): void {
+    // Video call component handles its own errors internally
+    // Don't set this.error as it would hide the chat content
+    console.error('Video call error:', error);
+  }
+
+  // Peer connection methods
+  setupPeerConnectionSubscription(): void {
+    const peerSub = this.peerConnectionService.connectionState$.subscribe(
+      (state: PeerConnectionState) => {
+        this.peerConnectionState = state;
+      }
+    );
+    this.subscriptions.push(peerSub);
+  }
+
+  connectToPeer(): void {
+    this.peerConnectionService.connect();
+  }
+
+  disconnectFromPeer(): void {
+    this.peerConnectionService.disconnect();
+  }
+
+  resetPeerConnection(): void {
+    this.peerConnectionService.reset();
+  }
+
+  copyPeerId(): void {
+    this.peerConnectionService.copyPeerId().then(success => {
+      if (success) {
+        console.log('Peer ID copied successfully');
+        // You could show a toast notification here
+      } else {
+        console.error('Failed to copy Peer ID');
+      }
+    });
+  }
+
+  // Video call info methods
+  showVideoCallInfoDialog(): void {
+    this.showVideoCallInfo = true;
+  }
+
+  closeVideoCallInfo(): void {
+    this.showVideoCallInfo = false;
   }
 }
