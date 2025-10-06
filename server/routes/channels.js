@@ -227,6 +227,16 @@ router.post('/', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('Create channel error:', error);
+    
+    // Handle duplicate channel name error
+    if (error.code === 11000 && error.keyPattern && error.keyPattern.name && error.keyPattern.groupId) {
+      return res.status(409).json({
+        success: false,
+        error: 'DUPLICATE_CHANNEL_NAME',
+        message: `A channel named "${name}" already exists in this group. Please choose a different name.`
+      });
+    }
+    
     res.status(500).json({
       success: false,
       error: 'INTERNAL_ERROR',
