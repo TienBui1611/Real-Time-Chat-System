@@ -3,7 +3,7 @@ const chaiHttp = require('chai-http');
 const fs = require('fs');
 const path = require('path');
 const { expect } = chai;
-const { connectTestDb, cleanupTestDb, closeTestDb, createTestData } = require('./setup');
+const { connectTestDb, cleanupTestDb, closeTestDbOnly, createTestData } = require('./setup');
 
 // Use chai-http plugin
 chai.use(chaiHttp);
@@ -131,8 +131,7 @@ describe('Upload Routes', function() {
       console.log('Cleanup error (non-critical):', error.message);
     }
     
-    await cleanupTestDb();
-    await closeTestDb();
+    await closeTestDbOnly(); // Keep data for inspection in MongoDB Compass
   });
 
   describe('POST /api/upload/avatar', function() {

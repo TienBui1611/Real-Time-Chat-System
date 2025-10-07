@@ -48,6 +48,98 @@ async function cleanupTestDb() {
 }
 
 /**
+ * Reset test data to initial state (for when data already exists)
+ */
+async function resetTestData() {
+  if (!testDb) {
+    throw new Error('Test database not connected');
+  }
+
+  // Reset test users to initial state
+  await testDb.collection('users').updateOne(
+    { _id: 'test_user_001' },
+    { $set: { 
+      username: 'testuser',
+      email: 'test@example.com',
+      password: 'testpass123',
+      role: 'user',
+      groups: [],
+      isActive: true
+    }}
+  );
+
+  await testDb.collection('users').updateOne(
+    { _id: 'test_admin_001' },
+    { $set: { 
+      username: 'testadmin',
+      email: 'admin@example.com',
+      password: 'adminpass123',
+      role: 'superAdmin',
+      groups: [],
+      isActive: true
+    }}
+  );
+
+  // Reset test group to initial state
+  await testDb.collection('groups').updateOne(
+    { _id: 'test_group_001' },
+    { $set: {
+      name: 'Test Group',
+      description: 'Group for testing',
+      createdBy: 'test_admin_001',
+      admins: ['test_admin_001'],
+      members: ['test_admin_001', 'test_user_001'],
+      channels: ['test_channel_001'],
+      isActive: true
+    }}
+  );
+
+  // Reset test channel to initial state
+  await testDb.collection('channels').updateOne(
+    { _id: 'test_channel_001' },
+    { $set: {
+      name: 'test-channel',
+      description: 'Channel for testing',
+      groupId: 'test_group_001',
+      createdBy: 'test_admin_001',
+      members: ['test_admin_001', 'test_user_001'],
+      isActive: true
+    }}
+  );
+
+  // Remove any dynamically created test data (users, groups, channels with generated IDs)
+  await testDb.collection('users').deleteMany({ 
+    _id: { $regex: /^user_\d+_\d+$/ }
+  });
+  
+  await testDb.collection('groups').deleteMany({ 
+    _id: { $regex: /^group_\d+_\d+$/ }
+  });
+  
+  await testDb.collection('channels').deleteMany({ 
+    _id: { $regex: /^channel_\d+_\d+$/ }
+  });
+
+  await testDb.collection('messages').deleteMany({ 
+    _id: { $regex: /^msg_\d+_\d+$/ }
+  });
+
+  console.log('Test data reset to initial state');
+}
+
+/**
+ * Close test database connection (without cleanup - leaves data for inspection)
+ */
+async function closeTestDbOnly() {
+  if (testClient) {
+    await testClient.close();
+    testClient = null;
+    testDb = null;
+    console.log('Test database connection closed (data preserved for inspection)');
+  }
+}
+
+/**
  * Close test database connection
  */
 async function closeTestDb() {
@@ -65,6 +157,15 @@ async function closeTestDb() {
 async function createTestData() {
   if (!testDb) {
     throw new Error('Test database not connected');
+  }
+
+  // Check if test data already exists
+  const existingUser = await testDb.collection('users').findOne({ _id: 'test_user_001' });
+  if (existingUser) {
+    console.log('Test data already exists, resetting to initial state');
+    // Reset the test data to ensure consistent state
+    await resetTestData();
+    return;
   }
 
   // Create test user
@@ -140,6 +241,8 @@ module.exports = {
   connectTestDb,
   cleanupTestDb,
   closeTestDb,
+  closeTestDbOnly,
   createTestData,
+  resetTestData,
   getTestDb: () => testDb
 };

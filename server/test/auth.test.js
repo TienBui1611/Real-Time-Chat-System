@@ -1,7 +1,7 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const { expect } = chai;
-const { connectTestDb, cleanupTestDb, closeTestDb, createTestData } = require('./setup');
+const { connectTestDb, cleanupTestDb, closeTestDbOnly, createTestData } = require('./setup');
 
 // Use chai-http plugin
 chai.use(chaiHttp);
@@ -25,8 +25,7 @@ describe('Authentication Routes', function() {
   });
 
   after(async function() {
-    await cleanupTestDb();
-    await closeTestDb();
+    await closeTestDbOnly(); // Keep data for inspection in MongoDB Compass
   });
 
   describe('POST /api/auth/login', function() {
