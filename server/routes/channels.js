@@ -376,16 +376,9 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    // Soft delete - mark as inactive
-    await req.mongodb.channels.updateOne(
-      { _id: id },
-      { 
-        $set: { 
-          isActive: false, 
-          deletedAt: new Date() 
-        } 
-      }
-    );
+    // Hard delete: First delete all messages in this channel
+    const deletedMessagesResult = await req.mongodb.messages.deleteMany({ channelId: id });
+    console.log(`Deleted ${deletedMessagesResult.deletedCount} messages from channel ${id}`);
 
     // Remove channel from group's channels array
     await req.mongodb.groups.updateOne(
@@ -393,9 +386,13 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       { $pull: { channels: id } }
     );
 
+    // Finally, permanently delete the channel from database
+    await req.mongodb.channels.deleteOne({ _id: id });
+    console.log(`Channel ${id} permanently deleted from database`);
+
     res.json({
       success: true,
-      message: 'Channel deleted successfully'
+      message: 'Channel and all its messages permanently deleted'
     });
 
   } catch (error) {

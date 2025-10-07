@@ -233,22 +233,130 @@ router.delete('/:id', authenticateToken, requireSuperAdmin, async (req, res) => 
       });
     }
 
-    // Soft delete - mark as inactive
-    await req.mongodb.users.updateOne(
-      { _id: id },
+    // Handle both ObjectId and string ID formats
+    const { ObjectId } = require('mongodb');
+    let userObjectId;
+    
+    // Check if the ID is a valid ObjectId format (24 hex characters)
+    if (ObjectId.isValid(id) && id.length === 24) {
+      userObjectId = new ObjectId(id);
+    } else {
+      // Use the string ID directly (for custom IDs like 'user_001')
+      userObjectId = id;
+    }
+
+    // First, perform all cleanup operations before deleting the user record
+
+    // Remove user from all groups (members and admins arrays)
+    await req.mongodb.groups.updateMany(
+      { $or: [{ members: userObjectId }, { admins: userObjectId }] },
       { 
-        $set: { 
-          isActive: false, 
-          deletedAt: new Date() 
+        $pull: { 
+          members: userObjectId, 
+          admins: userObjectId 
         } 
       }
     );
 
-    // TODO: Remove user from all groups and channels they belong to
+    // Remove user from all channels
+    await req.mongodb.channels.updateMany(
+      { members: userObjectId },
+      { $pull: { members: userObjectId } }
+    );
+
+    // Remove all messages sent by this user
+    const deletedMessagesResult = await req.mongodb.messages.deleteMany({ userId: userObjectId });
+    console.log(`Deleted ${deletedMessagesResult.deletedCount} messages from user ${id}`);
+
+    // Handle group ownership transfer for groups created by this user
+    const groupsCreatedByUser = await req.mongodb.groups.find({ createdBy: userObjectId }).toArray();
+    
+    for (const group of groupsCreatedByUser) {
+      // If group has other admins, transfer ownership to the first admin
+      if (group.admins && group.admins.length > 0) {
+        const newOwner = group.admins.find(adminId => !adminId.equals(userObjectId));
+        if (newOwner) {
+          await req.mongodb.groups.updateOne(
+            { _id: group._id },
+            { $set: { createdBy: newOwner } }
+          );
+        } else {
+          // If no other admins, transfer to first member (if any)
+          if (group.members && group.members.length > 0) {
+            const newOwner = group.members.find(memberId => !memberId.equals(userObjectId));
+            if (newOwner) {
+              await req.mongodb.groups.updateOne(
+                { _id: group._id },
+                { 
+                  $set: { createdBy: newOwner },
+                  $addToSet: { admins: newOwner }
+                }
+              );
+            }
+          }
+        }
+      } else {
+        // If no admins and no other members, mark group as inactive
+        await req.mongodb.groups.updateOne(
+          { _id: group._id },
+          { 
+            $set: { 
+              isActive: false,
+              deletedAt: new Date(),
+              deletedReason: 'Owner deleted with no successors'
+            }
+          }
+        );
+      }
+    }
+
+    // Handle channel ownership transfer for channels created by this user
+    const channelsCreatedByUser = await req.mongodb.channels.find({ createdBy: userObjectId }).toArray();
+    
+    for (const channel of channelsCreatedByUser) {
+      // Get the parent group to find potential new owners
+      const parentGroup = await req.mongodb.groups.findOne({ _id: channel.groupId });
+      
+      if (parentGroup && parentGroup.admins && parentGroup.admins.length > 0) {
+        // Transfer ownership to first group admin
+        const newOwner = parentGroup.admins[0];
+        await req.mongodb.channels.updateOne(
+          { _id: channel._id },
+          { $set: { createdBy: newOwner } }
+        );
+      } else if (channel.members && channel.members.length > 0) {
+        // Transfer to first remaining channel member
+        const newOwner = channel.members.find(memberId => !memberId.equals(userObjectId));
+        if (newOwner) {
+          await req.mongodb.channels.updateOne(
+            { _id: channel._id },
+            { $set: { createdBy: newOwner } }
+          );
+        }
+      } else {
+        // If no suitable owner found, mark channel as inactive
+        await req.mongodb.channels.updateOne(
+          { _id: channel._id },
+          { 
+            $set: { 
+              isActive: false,
+              deletedAt: new Date(),
+              deletedReason: 'Creator deleted with no successors'
+            }
+          }
+        );
+      }
+    }
+
+    console.log(`User ${id} deleted and cleaned up from all groups, channels, and messages`);
+
+    // Finally, completely remove the user from the database (hard delete)
+    await req.mongodb.users.deleteOne({ _id: userObjectId });
+    console.log(`User ${id} permanently deleted from database`);
 
     res.json({
       success: true,
-      message: 'User deleted successfully'
+      message: 'User permanently deleted and removed from all groups, channels, and messages'
     });
 
   } catch (error) {

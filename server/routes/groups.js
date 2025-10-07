@@ -354,31 +354,35 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    // Soft delete - mark as inactive
-    await req.mongodb.groups.updateOne(
-      { _id: id },
-      { 
-        $set: { 
-          isActive: false, 
-          deletedAt: new Date() 
-        } 
-      }
+    // Hard delete: First get all channels in this group
+    const groupChannels = await req.mongodb.channels.find({ groupId: id }).toArray();
+    console.log(`Found ${groupChannels.length} channels in group ${id}`);
+
+    // Delete all messages in all channels of this group
+    let totalDeletedMessages = 0;
+    for (const channel of groupChannels) {
+      const deletedMessagesResult = await req.mongodb.messages.deleteMany({ channelId: channel._id.toString() });
+      totalDeletedMessages += deletedMessagesResult.deletedCount;
+    }
+    console.log(`Deleted ${totalDeletedMessages} messages from all channels in group ${id}`);
+
+    // Delete all channels in this group
+    const deletedChannelsResult = await req.mongodb.channels.deleteMany({ groupId: id });
+    console.log(`Deleted ${deletedChannelsResult.deletedCount} channels from group ${id}`);
+
+    // Remove group from all users' groups arrays
+    await req.mongodb.users.updateMany(
+      { groups: id },
+      { $pull: { groups: id } }
     );
 
-    // Also soft delete all channels in this group
-    await req.mongodb.channels.updateMany(
-      { groupId: id },
-      { 
-        $set: { 
-          isActive: false, 
-          deletedAt: new Date() 
-        } 
-      }
-    );
+    // Finally, permanently delete the group from database
+    await req.mongodb.groups.deleteOne({ _id: id });
+    console.log(`Group ${id} permanently deleted from database`);
 
     res.json({
       success: true,
-      message: 'Group deleted successfully'
+      message: `Group permanently deleted along with ${deletedChannelsResult.deletedCount} channels and ${totalDeletedMessages} messages`
     });
 
   } catch (error) {
