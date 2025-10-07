@@ -197,7 +197,7 @@ npm test
 # Tests run with coverage enabled by default
 ```
 
-**Coverage Report Location:** `coverage/index.html`
+**Coverage Report Location:** `coverage/client/index.html`
 
 **Current Coverage:** 72.59% (106 tests passing)
 
