@@ -34,13 +34,25 @@ yarn-error.log
 .sass-cache/
 /connect.lock
 /coverage
+/server/coverage
 /libpeerconnection.log
 testem.log
 /typings
 
+# Test artifacts
+/dist/test-out
+/test-results
+/playwright-report
+
 # System files
 .DS_Store
 Thumbs.db
+
+# User uploads (keep directories with .gitkeep)
+/server/uploads/avatars/*
+!/server/uploads/avatars/.gitkeep
+/server/uploads/chat-images/*
+!/server/uploads/chat-images/.gitkeep
 
 # Data files (development only - contain sensitive data)
 /server/data/*.json
