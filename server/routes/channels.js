@@ -194,9 +194,14 @@ router.post('/', authenticateToken, async (req, res) => {
       });
     }
 
+    // Generate unique ID for the channel
+    const timestamp = Date.now();
+    const randomNum = Math.floor(Math.random() * 1000);
+    const channelId = `channel_${timestamp}_${randomNum}`;
+
     // Create new channel
     const newChannel = {
-      _id: req.mongodb.generateId('channel'),
+      _id: channelId,
       name,
       description,
       groupId,

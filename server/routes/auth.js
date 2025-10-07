@@ -1,4 +1,5 @@
 const express = require('express');
+const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // POST /api/auth/login
@@ -9,7 +10,7 @@ router.post('/login', async (req, res) => {
     if (!username || !password) {
       return res.status(400).json({
         success: false,
-        error: 'VALIDATION_ERROR',
+        error: 'MISSING_FIELDS',
         message: 'Username and password are required'
       });
     }
@@ -60,7 +61,7 @@ router.post('/login', async (req, res) => {
 });
 
 // POST /api/auth/logout
-router.post('/logout', (req, res) => {
+router.post('/logout', authenticateToken, (req, res) => {
   // For Phase 1, we just return success
   // In Phase 2, we would invalidate the session/token
   res.json({
@@ -70,44 +71,11 @@ router.post('/logout', (req, res) => {
 });
 
 // GET /api/auth/current
-router.get('/current', async (req, res) => {
+router.get('/current', authenticateToken, async (req, res) => {
   try {
-    // For Phase 1, we'll implement basic token checking
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        error: 'NO_TOKEN',
-        message: 'Authentication token required'
-      });
-    }
-
-    const token = authHeader.substring(7);
-    // Extract user ID from simple token format
-    const tokenParts = token.split('_');
-    if (tokenParts.length < 2) {
-      return res.status(401).json({
-        success: false,
-        error: 'INVALID_TOKEN',
-        message: 'Invalid authentication token'
-      });
-    }
-
-    const userId = tokenParts[1];
-
-    // Get user from MongoDB
-    const user = await req.mongodb.users.findOne({
-      _id: userId,
-      isActive: true
-    });
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'USER_NOT_FOUND',
-        message: 'User not found or inactive'
-      });
-    }
-
+    // User is already available from authenticateToken middleware
+    const user = req.user;
+    
     // Return user data (without password) and add id field for frontend compatibility
     const { password: _, ...userWithoutPassword } = user;
     const userWithId = {
@@ -116,6 +84,7 @@ router.get('/current', async (req, res) => {
     };
     
     res.json({
+      success: true,
       user: userWithId
     });
 

@@ -102,9 +102,14 @@ router.post('/', authenticateToken, requireGroupAdmin, async (req, res) => {
       });
     }
 
+    // Generate unique ID for the group
+    const timestamp = Date.now();
+    const randomNum = Math.floor(Math.random() * 1000);
+    const groupId = `group_${timestamp}_${randomNum}`;
+
     // Create new group
     const newGroup = {
-      _id: req.mongodb.generateId('group'),
+      _id: groupId,
       name,
       description,
       createdBy,

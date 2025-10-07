@@ -252,9 +252,14 @@ router.post('/chat-image', authenticateToken, chatImageUpload.single('image'), a
     // Generate the image URL path
     const imagePath = `/uploads/chat-images/${req.file.filename}`;
     
+    // Generate unique ID for the message
+    const timestamp = Date.now();
+    const randomNum = Math.floor(Math.random() * 1000);
+    const messageId = `msg_${timestamp}_${randomNum}`;
+
     // Create image message in MongoDB
     const imageMessage = {
-      _id: req.mongodb.generateId('msg'),
+      _id: messageId,
       channelId: channelId,
       userId: req.user._id,
       username: req.user.username,

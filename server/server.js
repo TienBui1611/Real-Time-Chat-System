@@ -31,26 +31,29 @@ const io = new Server(server, {
 });
 
 // Initialize PeerJS server integrated with Express
-const peerServer = PeerServer({
-  port: 9000,
-  path: '/peerjs',
-  corsOptions: {
-    origin: 'http://localhost:4200',
-    credentials: true
-  },
-  allow_discovery: true
-});
+// PeerJS Server setup (only in production, not during testing)
+if (process.env.NODE_ENV !== 'test') {
+  const peerServer = PeerServer({
+    port: 9000,
+    path: '/peerjs',
+    corsOptions: {
+      origin: 'http://localhost:4200',
+      credentials: true
+    },
+    allow_discovery: true
+  });
 
-// Handle PeerJS server events
-peerServer.on('connection', (client) => {
-  console.log('🎥 Peer connected:', client.getId());
-});
+  // Handle PeerJS server events
+  peerServer.on('connection', (client) => {
+    console.log('🎥 Peer connected:', client.getId());
+  });
 
-peerServer.on('disconnect', (client) => {
-  console.log('🎥 Peer disconnected:', client.getId());
-});
+  peerServer.on('disconnect', (client) => {
+    console.log('🎥 Peer disconnected:', client.getId());
+  });
 
-console.log('🎥 PeerJS server running on port 9000');
+  console.log('🎥 PeerJS server running on port 9000');
+}
 
 // Initialize MongoDB service
 const mongodb = new MongoDBService();
@@ -317,4 +320,10 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Start the server
-startServer();
+if (require.main === module) {
+  // Only start server if this file is run directly (not required for testing)
+  startServer();
+}
+
+// Export app for testing
+module.exports = app;

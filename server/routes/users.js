@@ -17,6 +17,7 @@ router.get('/', authenticateToken, requireGroupAdmin, async (req, res) => {
     });
 
     res.json({
+      success: true,
       users: usersWithoutPasswords
     });
   } catch (error) {
@@ -37,7 +38,7 @@ router.post('/', authenticateToken, requireSuperAdmin, async (req, res) => {
     if (!username || !email || !password) {
       return res.status(400).json({
         success: false,
-        error: 'VALIDATION_ERROR',
+        error: 'MISSING_FIELDS',
         message: 'Username, email, and password are required'
       });
     }
@@ -53,14 +54,19 @@ router.post('/', authenticateToken, requireSuperAdmin, async (req, res) => {
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        error: 'USER_EXISTS',
+        error: 'DUPLICATE_USERNAME',
         message: 'Username or email already exists'
       });
     }
 
+    // Generate unique ID for the user
+    const timestamp = Date.now();
+    const randomNum = Math.floor(Math.random() * 1000);
+    const userId = `user_${timestamp}_${randomNum}`;
+
     // Create new user
     const newUser = {
-      _id: req.mongodb.generateId('user'),
+      _id: userId,
       username,
       email,
       password, // Plain text for Phase 1
@@ -95,6 +101,57 @@ router.post('/', authenticateToken, requireSuperAdmin, async (req, res) => {
   }
 });
 
+// GET /api/users/search - Search users (must come before /:id route)
+router.get('/search', authenticateToken, requireSuperAdmin, async (req, res) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q) {
+      return res.status(400).json({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: 'Search query is required'
+      });
+    }
+
+    const query = q.toLowerCase();
+    const users = await req.mongodb.users.find({
+      $and: [
+        { isActive: true },
+        {
+          $or: [
+            { username: { $regex: query, $options: 'i' } },
+            { email: { $regex: query, $options: 'i' } },
+            { role: { $regex: query, $options: 'i' } }
+          ]
+        }
+      ]
+    }).toArray();
+
+    // Remove passwords from response and add id field for frontend compatibility
+    const usersWithoutPasswords = users.map(user => {
+      const { password, ...userWithoutPassword } = user;
+      return {
+        ...userWithoutPassword,
+        id: user._id
+      };
+    });
+
+    res.json({ 
+      success: true,
+      users: usersWithoutPasswords 
+    });
+
+  } catch (error) {
+    console.error('Search users error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to search users'
+    });
+  }
+});
+
 // GET /api/users/:id - Get user by ID
 router.get('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
@@ -115,7 +172,10 @@ router.get('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
       ...userWithoutPassword,
       id: user._id
     };
-    res.json({ user: userWithId });
+    res.json({ 
+      success: true,
+      user: userWithId 
+    });
 
   } catch (error) {
     console.error('Get user by ID error:', error);
@@ -477,54 +537,6 @@ router.post('/validate-email', authenticateToken, requireSuperAdmin, async (req,
       success: false,
       error: 'INTERNAL_ERROR',
       message: 'Failed to validate email'
-    });
-  }
-});
-
-// GET /api/users/search - Search users
-router.get('/search', authenticateToken, requireSuperAdmin, async (req, res) => {
-  try {
-    const { q } = req.query;
-    
-    if (!q) {
-      return res.status(400).json({
-        success: false,
-        error: 'VALIDATION_ERROR',
-        message: 'Search query is required'
-      });
-    }
-
-    const query = q.toLowerCase();
-    const users = await req.mongodb.users.find({
-      $and: [
-        { isActive: true },
-        {
-          $or: [
-            { username: { $regex: query, $options: 'i' } },
-            { email: { $regex: query, $options: 'i' } },
-            { role: { $regex: query, $options: 'i' } }
-          ]
-        }
-      ]
-    }).toArray();
-
-    // Remove passwords from response and add id field for frontend compatibility
-    const usersWithoutPasswords = users.map(user => {
-      const { password, ...userWithoutPassword } = user;
-      return {
-        ...userWithoutPassword,
-        id: user._id
-      };
-    });
-
-    res.json({ users: usersWithoutPasswords });
-
-  } catch (error) {
-    console.error('Search users error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'INTERNAL_ERROR',
-      message: 'Failed to search users'
     });
   }
 });
