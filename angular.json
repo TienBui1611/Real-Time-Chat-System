@@ -98,7 +98,8 @@
             ],
             "styles": [
               "src/styles.css"
-            ]
+            ],
+            "codeCoverage": true
           }
         }
       }
