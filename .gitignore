@@ -57,6 +57,8 @@ Thumbs.db
 # Data files (development only - contain sensitive data)
 /server/data/*.json
 /server/data/backups/
+server/.nyc_output/
+server/node_modules/
 
 # Planning documentation
 phase2_planning.md
